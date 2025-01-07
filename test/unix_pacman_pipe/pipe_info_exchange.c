@@ -57,6 +57,52 @@ static char* record_pacman_output(int in_fd, size_t* __restrict__ n_chars_record
 	return pacman_output;
 }
 
+struct dummy_pacman_obj {
+	char  valid;
+	char* name;
+	char* version;
+};
+
+/**
+ * pacman_output is only mutated if pacman_objs_out is not NULL.
+ */
+size_t process_pacman_output(struct dummy_pacman_obj* __restrict__ pacman_objs_out, size_t pacman_objs_size, char* pacman_output, size_t pacman_output_len) {
+	char delim[] = "\n";
+
+	size_t n_tokens = 0;
+
+	for (size_t i = 0; i < pacman_output_len; i++) {
+		if (pacman_output[i] == '\n') {
+			n_tokens++;
+		}
+
+		if (pacman_output[i] == ' ') {
+		}
+	}
+	n_tokens++;
+
+	if (pacman_objs_out == NULL) {
+		return n_tokens;
+	}
+
+	size_t n_pkgs = 0;
+	char* token = strtok(pacman_output, delim);
+	for (size_t i = 0; token; i++, token = strtok(NULL, delim)) {
+		pacman_objs_out[i].valid = 0;
+		char* next_space = strchr(token, ' ');
+		if (next_space == NULL) {
+			continue;
+		}
+		*next_space = '\0';
+		pacman_objs_out[i].name    = token;
+		pacman_objs_out[i].version = next_space + 1;
+		pacman_objs_out[i].valid   = 1;
+		n_pkgs++;
+	}
+
+	return n_pkgs;
+}
+
 int main(int argc, char** argv, char** envp) {
 	int pacman_pipe_fds[2];
 
@@ -112,7 +158,19 @@ int main(int argc, char** argv, char** envp) {
 			return errno;
 		}
 
-		(void) printf("%s\n", pacman_out);
+		size_t n_pkgs = process_pacman_output(NULL, 0, pacman_out, pacman_out_len);
+
+		struct dummy_pacman_obj pkgs[n_pkgs];
+
+		n_pkgs = process_pacman_output(pkgs, n_pkgs, pacman_out, pacman_out_len);
+
+		for (size_t i = 0; i < n_pkgs; i++) {
+			if (pkgs[i].valid) {
+				(void) printf("{.name = \"%s\", .version = \"%s\"}\n", pkgs[i].name, pkgs[i].version);
+			}
+		}
+
+		// (void) printf("%s\n", pacman_out);
 
 		free(pacman_out);
 	}
