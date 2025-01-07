@@ -40,7 +40,8 @@ int main(void) {
 	}
 	CURLcode res;
 	curl_easy_setopt(curl, CURLOPT_URL, "https://aur.archlinux.org/rpc/v5/info");
-	curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "arg[]=dropbox&arg[]=zoom");
+	curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "application/json");
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, receive_info);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)(&response));
 	res = curl_easy_perform(curl);
