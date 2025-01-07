@@ -4,7 +4,7 @@ LD=gcc
 LDFLAGS=-lcurl 
 
 exec_out=bin/aur_man
-src_files=src/aur.c src/main.c
+src_files=src/aur.c src/pacman.c src/main.c
 obj_files=$(patsubst src/%.c, obj/%.o, $(src_files))
 
 .PHONY=run clean
