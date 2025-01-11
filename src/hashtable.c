@@ -5,27 +5,9 @@
 
 #include "hashtable.h"
 
-struct hashtable_node {
-	char* pkg_name;
-	char* installed_ver;
-	char* updated_ver;
-	struct hashtable_node* next_node;
-	char  is_non_aur;
-};
-
-typedef struct {
-	struct hashtable_node** map;
-	size_t map_size;
-
-	struct hashtable_node*  nodes_stash;
-	size_t nodes_stash_size;
-
-	size_t n_items;
-} hashtable_t;
-
 size_t additive_hash(const char* s) {
 	size_t r = 0;
-	for (char* i = s; *i != '\0'; i++) {
+	for (const char* i = s; *i != '\0'; i++) {
 		r += *i;
 	}
 	return r;
@@ -130,4 +112,6 @@ void hashtable_set_item(hashtable_t* __restrict__ map, char* key, char* installe
 	existing_node -> installed_ver = installed_ver;
 	existing_node -> updated_ver   = new_ver;
 	existing_node -> is_non_aur    = is_non_aur;
+
+	__remap_node(map, existing_node);
 }
