@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wpedantic -g
+CFLAGS=-Wall -Wpedantic -I lib/jsmn -g
 LD=gcc
 LDFLAGS=-lcurl 
 
