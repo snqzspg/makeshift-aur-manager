@@ -62,7 +62,7 @@ pacman_names_vers_t get_installed_non_pacman() {
 
 	if (pipe(pacman_pipe_fds) < 0) {
 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		return NULL_RET;
+		return PACMAN_PKGS_NULL_RET;
 	}
 
 	int pacman_child_proc = fork();
@@ -70,36 +70,37 @@ pacman_names_vers_t get_installed_non_pacman() {
 	if (pacman_child_proc == 0) {
 		if (close(pacman_pipe_fds[0]) < 0) {
 			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return NULL_RET;
+			return PACMAN_PKGS_NULL_RET;
 		}
 
 		if (dup2(pacman_pipe_fds[1], STDOUT_FILENO) < 0) {
 			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return NULL_RET;
+			return PACMAN_PKGS_NULL_RET;
 		}
 
 		if (close(pacman_pipe_fds[1]) < 0) {
 			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return NULL_RET;
+			return PACMAN_PKGS_NULL_RET;
 		}
 		
 		if (execl("/usr/bin/pacman", "pacman", "-Qm", (char *) NULL) < 0) {
 			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return NULL_RET;
+			return PACMAN_PKGS_NULL_RET;
 		}
+		return PACMAN_PKGS_NULL_RET;
 	} else if (pacman_child_proc == -1) {
 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		return NULL_RET;
+		return PACMAN_PKGS_NULL_RET;
 	} else {
 		if (close(pacman_pipe_fds[1]) < 0) {
 			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return NULL_RET;
+			return PACMAN_PKGS_NULL_RET;
 		}
 
 		int pacman_exit_stat;
 		if (waitpid(pacman_child_proc, &pacman_exit_stat, 0) < 0) {
 			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return NULL_RET;
+			return PACMAN_PKGS_NULL_RET;
 		}
 
 		int pacman_ret_code = WEXITSTATUS(pacman_exit_stat);
@@ -112,7 +113,7 @@ pacman_names_vers_t get_installed_non_pacman() {
 		char* pacman_out = record_pacman_output(pacman_pipe_fds[0], &pacman_out_len);
 
 		if (pacman_out == NULL) {
-			return NULL_RET;
+			return PACMAN_PKGS_NULL_RET;
 		}
 
 		(void) printf("%s\n", pacman_out);
