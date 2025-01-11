@@ -57,6 +57,51 @@ static char* record_pacman_output(int in_fd, size_t* __restrict__ n_chars_record
 	return pacman_output;
 }
 
+/**
+ * pacman_output is only mutated if pacman_objs_out is not NULL.
+ */
+static size_t process_pacman_output(pacman_name_ver_t* __restrict__ pacman_objs_out, size_t pacman_objs_size, char* pacman_output, size_t pacman_output_len) {
+	char delim[] = "\n";
+
+	size_t n_tokens = 0;
+
+	for (size_t i = 0; i < pacman_output_len; i++) {
+		if (pacman_output[i] == '\n') {
+			n_tokens++;
+		}
+
+		if (pacman_output[i] == ' ') {
+		}
+	}
+	n_tokens++;
+
+	if (pacman_objs_out == NULL) {
+		return n_tokens;
+	}
+
+	size_t n_pkgs = 0;
+	char* token = strtok(pacman_output, delim);
+	for (size_t i = 0; token; i++, token = strtok(NULL, delim)) {
+		pacman_objs_out[i].valid = 0;
+		char* next_space = strchr(token, ' ');
+		if (next_space == NULL) {
+			continue;
+		}
+		*next_space = '\0';
+		pacman_objs_out[i].name    = token;
+		pacman_objs_out[i].version = next_space + 1;
+		pacman_objs_out[i].valid   = 1;
+		n_pkgs++;
+	}
+
+	return n_pkgs;
+}
+
+pacman_names_vers_t ret_list = {
+	.pkg_names_vers = NULL,
+	.n_items        = 0
+};
+
 pacman_names_vers_t get_installed_non_pacman() {
 	int pacman_pipe_fds[2];
 
@@ -116,8 +161,46 @@ pacman_names_vers_t get_installed_non_pacman() {
 			return PACMAN_PKGS_NULL_RET;
 		}
 
-		(void) printf("%s\n", pacman_out);
+		// if (ret_list == NULL) {
+		// 	ret_list = malloc(sizeof(pacman_names_vers_t));
+		// 	if (ret_list == NULL) {
+		// 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		// 		return PACMAN_PKGS_NULL_RET;
+		// 	}
+		// 	ret_list -> n_items        = 0;
+		// 	ret_list -> pkg_names_vers = NULL;
+		// }
 
-		free(pacman_out);
+		ret_list.n_items = process_pacman_output(NULL, 0, pacman_out, pacman_out_len);
+
+		if (ret_list.pkg_names_vers == NULL) {
+			ret_list.pkg_names_vers = malloc(ret_list.n_items * sizeof(pacman_name_ver_t));
+		} else {
+			ret_list.pkg_names_vers = realloc(ret_list.pkg_names_vers, ret_list.n_items * sizeof(pacman_name_ver_t));
+		}
+
+		ret_list.n_items = process_pacman_output(ret_list.pkg_names_vers, ret_list.n_items, pacman_out, pacman_out_len);
+
+		// ret_list -> pkg_names_vers = realloc(ret_list -> pkg_names_vers, ret_list -> n_items * sizeof(pacman_name_ver_t));
+
+		// for (size_t i = 0; i < ret_list.n_items; i++) {
+		// 	if (ret_list.pkg_names_vers[i].valid) {
+				// (void) printf("{.name = \"%s\", .version = \"%s\"}\n", pkgs[i].name, pkgs[i].version);
+			// }
+		// }
+
+		return ret_list;
+	}
+}
+
+void clean_up_pacman_output(void) {
+	if (ret_list.pkg_names_vers != NULL) {
+		free(ret_list.pkg_names_vers);
+	}
+
+	if (pacman_output != NULL) {
+		free(pacman_output);
+		pacman_output      = NULL;
+		pacman_output_size = 0;
 	}
 }
