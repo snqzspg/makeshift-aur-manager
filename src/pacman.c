@@ -10,6 +10,11 @@
 char*  pacman_output      = NULL;
 size_t pacman_output_size = 0;
 
+pacman_names_vers_t PACMAN_PKGS_NULL_RET = {
+    .n_items        = 0,
+    .pkg_names_vers = NULL
+};
+
 static char* record_pacman_output(int in_fd, size_t* __restrict__ n_chars_recorded_out) {
 	if (pacman_output == NULL) {
 		pacman_output = (char *) malloc(1024);
