@@ -96,6 +96,11 @@ static void __remap_node(hashtable_t* __restrict__ map, struct hashtable_node* n
 	node -> next_node = NULL;
 }
 
+static char __ends_with_git(const char* pkgname) {
+	size_t slen = strlen(pkgname);
+	return pkgname[slen - 4] == '-' && pkgname[slen - 3] == 'g' && pkgname[slen - 2] == 'i' && pkgname[slen - 1] == 't';
+}
+
 void hashtable_set_item(hashtable_t* __restrict__ map, char* key, char* installed_ver, char* new_ver, char is_non_aur) {
 	struct hashtable_node* existing_node = hashtable_find_inside_map(*map, key);
 
@@ -108,10 +113,12 @@ void hashtable_set_item(hashtable_t* __restrict__ map, char* key, char* installe
 		map -> n_items++;
 	}
 
-	existing_node -> pkg_name      = key;
-	existing_node -> installed_ver = installed_ver;
-	existing_node -> updated_ver   = new_ver;
-	existing_node -> is_non_aur    = is_non_aur;
+	existing_node -> pkg_name       = key;
+	existing_node -> installed_ver  = installed_ver;
+	existing_node -> updated_ver    = new_ver;
+	existing_node -> is_non_aur     = is_non_aur;
+
+	existing_node -> is_git_package = __ends_with_git(key);
 
 	__remap_node(map, existing_node);
 }

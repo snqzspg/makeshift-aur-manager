@@ -37,7 +37,7 @@ int main(void) {
 	for (size_t i = 0; i < installed_pkgs.n_items; i++) {
 		if (installed_pkgs.pkg_names_vers[i].valid) {
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, installed_pkgs.pkg_names_vers[i].name);
-			(void) printf("{.name = \"%s\", .version = \"%s%s%s\"}\n", installed_pkgs.pkg_names_vers[i].name, found_node -> installed_ver, found_node -> is_non_aur ? "" : "\", .aur_ver = \"", found_node -> is_non_aur ? "" : found_node -> updated_ver);
+			(void) printf("{.name = \"%s\", .version = \"%s%s%s\", .is_git = %s}\n", installed_pkgs.pkg_names_vers[i].name, found_node -> installed_ver, found_node -> is_non_aur ? "" : "\", .aur_ver = \"", found_node -> is_non_aur ? "" : found_node -> updated_ver, found_node -> is_git_package ? "true": "false");
 		}
 	}
 	

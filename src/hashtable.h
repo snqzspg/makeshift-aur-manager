@@ -7,6 +7,7 @@ struct hashtable_node {
 	char* updated_ver;
 	struct hashtable_node* next_node;
 	char  is_non_aur;
+	char  is_git_package;
 };
 
 typedef struct {
