@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -200,5 +201,65 @@ void clean_up_pacman_output(void) {
 		free(pacman_output);
 		pacman_output      = NULL;
 		pacman_output_size = 0;
+	}
+}
+
+int perform_pacman_checkupdates() {
+	int check_upd_child = fork();
+
+	if (check_upd_child == 0) {
+		(void) fprintf(stderr, "--- \033[32mExecuting /usr/bin/checkupdates\033[39;49m ---\n");
+
+		if (execl("/usr/bin/checkupdates", "checkupdates", NULL) < 0) {
+			(void) fprintf(stderr, "[NOTE] /usr/bin/checkupdates \033[31mexecution failed!\033[39;49m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return errno;
+		}
+		return -1;
+	} else if (check_upd_child == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		return -1;
+	} else {
+		int checkupd_exit_stat;
+		run_syscall_print_err_w_ret_errno(waitpid(check_upd_child, &checkupd_exit_stat, 0), __FILE__, __LINE__);
+
+		return WEXITSTATUS(checkupd_exit_stat);
+	}
+}
+
+int perform_pacman_upgrade(int argc, char** argv) {
+	int n_pars = argc + 4;
+	char* exec_pars[n_pars];
+	exec_pars[0] = "sudo";
+	exec_pars[1] = "pacman";
+	exec_pars[2] = "-Syu";
+	for (int i = 0, i1 = 3; i < argc; i++, i1++) {
+		exec_pars[i1] = argv[i];
+	}
+	exec_pars[n_pars - 1] = NULL;
+
+	int check_upd_child = fork();
+
+	if (check_upd_child == 0) {
+		(void) fprintf(stderr, "--- \033[32mExecuting /usr/bin/sudo ");
+		for (int i = 1; i < n_pars - 1; i++) {
+			(void) fprintf(stderr, "%s ", exec_pars[i]);
+		}
+		(void) fprintf(stderr, "\033[39;49m---\n");
+
+		if (execv("/usr/bin/sudo", exec_pars) < 0) {
+			(void) fprintf(stderr, "[NOTE] /usr/bin/sudo \033[31mexecution failed!\033[39;49m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return errno;
+		}
+		return -1;
+	} else if (check_upd_child == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		return -1;
+	} else {
+		int pacman_exit_stat;
+		run_syscall_print_err_w_ret_errno(waitpid(check_upd_child, &pacman_exit_stat, 0), __FILE__, __LINE__);
+
+		return WEXITSTATUS(pacman_exit_stat);
 	}
 }

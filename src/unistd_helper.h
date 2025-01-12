@@ -6,4 +6,9 @@
 	return (ret_if_err); \
 }
 
+#define run_syscall_print_err_w_ret_errno(syscall_fx, file_name, line_no) if ((syscall_fx) < 0) {\
+	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", (file_name), (line_no), strerror(errno)); \
+	return errno; \
+}
+
 #endif // UNISTD_HELPER_H_INCLUDED
