@@ -13,6 +13,7 @@ struct hashtable_node {
 	char* installed_ver;
 	char* updated_ver;
 	struct hashtable_node* next_node;
+	char* package_base;
 	enum update_stat update_type;
 	char  is_non_aur;
 	char  is_git_package;

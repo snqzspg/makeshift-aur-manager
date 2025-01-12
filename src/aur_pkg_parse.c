@@ -22,7 +22,8 @@ static jsmntok_t* find_next_sibling(jsmntok_t* current_token, jsmntok_t* token_e
 
 enum __update_type {
 	NAME,
-	VERSION
+	VERSION,
+	BASE_PKG
 };
 
 static char* __update_info_from_json(char* mutable_json_str, enum __update_type* __restrict__ update_type_out, jsmntok_t* prop_tok) {
@@ -61,6 +62,7 @@ static char* __update_info_from_json(char* mutable_json_str, enum __update_type*
 jsmntok_t* find_and_update_pkg_info(char* mutable_json_str, hashtable_t* map, jsmntok_t* pkg_tok, jsmntok_t* token_end) {
 	char* version_info = NULL;
 	char* pkg_name     = NULL;
+	char* base_pkg     = NULL;
 
 	jsmntok_t* i;
 	for (i = pkg_tok + 1; i != NULL && i < token_end; i = find_next_sibling(i, token_end, NULL)) {
@@ -77,6 +79,9 @@ jsmntok_t* find_and_update_pkg_info(char* mutable_json_str, hashtable_t* map, js
 				break;
 			case VERSION:
 				version_info = info;
+				break;
+			case BASE_PKG:
+				base_pkg = info;
 		}
 		info++;
 	}
@@ -87,8 +92,9 @@ jsmntok_t* find_and_update_pkg_info(char* mutable_json_str, hashtable_t* map, js
 
 	struct hashtable_node* node = hashtable_find_inside_map(*map, pkg_name);
 
-	node -> updated_ver = version_info;
-	node -> is_non_aur  = 0;
+	node -> updated_ver  = version_info;
+	node -> is_non_aur   = 0;
+	node -> package_base = base_pkg;
 
 	int vercmp = compare_versions(node -> installed_ver, node -> updated_ver);
 	node -> update_type = vercmp == 0 ? UP_TO_DATE : (vercmp < 0 ? UPGRADE : DOWNGRADE);
