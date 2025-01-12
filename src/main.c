@@ -7,11 +7,6 @@
 
 #include "aur_pkg_parse.h"
 
-char *sample_packages[] = {
-	"dropbox",
-	"zoom"
-};
-
 int main(void) {
 	pacman_names_vers_t installed_pkgs = get_installed_non_pacman();
 	char* pkg_namelist[installed_pkgs.n_items];
@@ -30,7 +25,7 @@ int main(void) {
 	}
 
 	const char* response_json = get_packages_info((const char* const*) pkg_namelist, actual_namelist_size);
-	(void) printf("%s\n", response_json);
+	// (void) printf("%s\n", response_json);
 
 	size_t res_json_len = strlen(response_json);
 	char mutable_res_json[res_json_len + 1];
