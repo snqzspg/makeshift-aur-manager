@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "pacman.h"
+#include "unistd_helper.h"
 
 char*  pacman_output      = NULL;
 size_t pacman_output_size = 0;
@@ -110,48 +111,56 @@ pacman_names_vers_t ret_list = {
 pacman_names_vers_t get_installed_non_pacman() {
 	int pacman_pipe_fds[2];
 
-	if (pipe(pacman_pipe_fds) < 0) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		return PACMAN_PKGS_NULL_RET;
-	}
+	// if (pipe(pacman_pipe_fds) < 0) {
+	// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+	// 	return PACMAN_PKGS_NULL_RET;
+	// }
+
+	run_syscall_print_err_w_ret(pipe(pacman_pipe_fds), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
 
 	int pacman_child_proc = fork();
 
 	if (pacman_child_proc == 0) {
-		if (close(pacman_pipe_fds[0]) < 0) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return PACMAN_PKGS_NULL_RET;
-		}
+		run_syscall_print_err_w_ret(close(pacman_pipe_fds[0]), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+		// if (close(pacman_pipe_fds[0]) < 0) {
+		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		// 	return PACMAN_PKGS_NULL_RET;
+		// }
 
-		if (dup2(pacman_pipe_fds[1], STDOUT_FILENO) < 0) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return PACMAN_PKGS_NULL_RET;
-		}
+		run_syscall_print_err_w_ret(dup2(pacman_pipe_fds[1], STDOUT_FILENO), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+		// if (dup2(pacman_pipe_fds[1], STDOUT_FILENO) < 0) {
+		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		// 	return PACMAN_PKGS_NULL_RET;
+		// }
 
-		if (close(pacman_pipe_fds[1]) < 0) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return PACMAN_PKGS_NULL_RET;
-		}
+		run_syscall_print_err_w_ret(close(pacman_pipe_fds[1]), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+		// if (close(pacman_pipe_fds[1]) < 0) {
+		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		// 	return PACMAN_PKGS_NULL_RET;
+		// }
 		
-		if (execl("/usr/bin/pacman", "pacman", "-Qm", (char *) NULL) < 0) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return PACMAN_PKGS_NULL_RET;
-		}
+		run_syscall_print_err_w_ret(execl("/usr/bin/pacman", "pacman", "-Qm", (char *) NULL), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+		// if (execl("/usr/bin/pacman", "pacman", "-Qm", (char *) NULL) < 0) {
+		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		// 	return PACMAN_PKGS_NULL_RET;
+		// }
 		return PACMAN_PKGS_NULL_RET;
 	} else if (pacman_child_proc == -1) {
 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
 		return PACMAN_PKGS_NULL_RET;
 	} else {
-		if (close(pacman_pipe_fds[1]) < 0) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return PACMAN_PKGS_NULL_RET;
-		}
+		run_syscall_print_err_w_ret(close(pacman_pipe_fds[1]), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+		// if (close(pacman_pipe_fds[1]) < 0) {
+		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		// 	return PACMAN_PKGS_NULL_RET;
+		// }
 
 		int pacman_exit_stat;
-		if (waitpid(pacman_child_proc, &pacman_exit_stat, 0) < 0) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-			return PACMAN_PKGS_NULL_RET;
-		}
+		run_syscall_print_err_w_ret(waitpid(pacman_child_proc, &pacman_exit_stat, 0), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+		// if (waitpid(pacman_child_proc, &pacman_exit_stat, 0) < 0) {
+		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		// 	return PACMAN_PKGS_NULL_RET;
+		// }
 
 		int pacman_ret_code = WEXITSTATUS(pacman_exit_stat);
 
@@ -166,16 +175,6 @@ pacman_names_vers_t get_installed_non_pacman() {
 			return PACMAN_PKGS_NULL_RET;
 		}
 
-		// if (ret_list == NULL) {
-		// 	ret_list = malloc(sizeof(pacman_names_vers_t));
-		// 	if (ret_list == NULL) {
-		// 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		// 		return PACMAN_PKGS_NULL_RET;
-		// 	}
-		// 	ret_list -> n_items        = 0;
-		// 	ret_list -> pkg_names_vers = NULL;
-		// }
-
 		ret_list.n_items = process_pacman_output(NULL, 0, pacman_out, pacman_out_len);
 
 		if (ret_list.pkg_names_vers == NULL) {
@@ -187,12 +186,6 @@ pacman_names_vers_t get_installed_non_pacman() {
 		ret_list.n_items = process_pacman_output(ret_list.pkg_names_vers, ret_list.n_items, pacman_out, pacman_out_len);
 
 		// ret_list -> pkg_names_vers = realloc(ret_list -> pkg_names_vers, ret_list -> n_items * sizeof(pacman_name_ver_t));
-
-		// for (size_t i = 0; i < ret_list.n_items; i++) {
-		// 	if (ret_list.pkg_names_vers[i].valid) {
-				// (void) printf("{.name = \"%s\", .version = \"%s\"}\n", pkgs[i].name, pkgs[i].version);
-			// }
-		// }
 
 		return ret_list;
 	}
