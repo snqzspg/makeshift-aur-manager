@@ -178,10 +178,10 @@ int perform_pacman_checkupdates() {
 	int check_upd_child = fork();
 
 	if (check_upd_child == 0) {
-		(void) fprintf(stderr, "--- \033[32mExecuting /usr/bin/checkupdates\033[39;49m ---\n");
+		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/checkupdates\033[0m ---\n");
 
 		if (execl("/usr/bin/checkupdates", "checkupdates", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] /usr/bin/checkupdates \033[31mexecution failed!\033[39;49m\n");
+			(void) fprintf(stderr, "[NOTE] /usr/bin/checkupdates \033[1;31mexecution failed!\033[0m\n");
 			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
 			return errno;
 		}
