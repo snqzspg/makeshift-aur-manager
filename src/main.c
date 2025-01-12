@@ -7,7 +7,16 @@
 
 #include "aur_pkg_parse.h"
 
-int main(void) {
+int main(int argc, char** argv) {
+	if (argc > 1) {
+		if (strcmp(argv[1], "pacman-checkupdates") == 0) {
+			return perform_pacman_checkupdates();
+		}
+		if (strcmp(argv[1], "pacman-upgrade") == 0) {
+			return perform_pacman_upgrade(argc - 2, argv + 2);
+		}
+	}
+
 	pacman_names_vers_t installed_pkgs = get_installed_non_pacman();
 	char* pkg_namelist[installed_pkgs.n_items];
 	size_t actual_namelist_size = 0;
