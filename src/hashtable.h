@@ -1,11 +1,19 @@
 #ifndef HASHTABLE_H_INCLUDED
 #define HASHTABLE_H_INCLUDED
 
+enum update_stat {
+	UNKNOWN,
+	UP_TO_DATE,
+	UPGRADE,
+	DOWNGRADE
+};
+
 struct hashtable_node {
 	char* pkg_name;
 	char* installed_ver;
 	char* updated_ver;
 	struct hashtable_node* next_node;
+	enum update_stat update_type;
 	char  is_non_aur;
 	char  is_git_package;
 };

@@ -6,6 +6,7 @@
 #include <jsmn.h>
 
 #include "hashtable.h"
+#include "pacman.h"
 
 #include "aur_pkg_parse.h"
 
@@ -88,6 +89,9 @@ jsmntok_t* find_and_update_pkg_info(char* mutable_json_str, hashtable_t* map, js
 
 	node -> updated_ver = version_info;
 	node -> is_non_aur  = 0;
+
+	int vercmp = compare_versions(node -> installed_ver, node -> updated_ver);
+	node -> update_type = vercmp == 0 ? UP_TO_DATE : (vercmp < 0 ? UPGRADE : DOWNGRADE);
 
 	return i;
 }

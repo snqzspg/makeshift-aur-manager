@@ -119,6 +119,7 @@ void hashtable_set_item(hashtable_t* __restrict__ map, char* key, char* installe
 	existing_node -> is_non_aur     = is_non_aur;
 
 	existing_node -> is_git_package = __ends_with_git(key);
+	existing_node -> update_type    = UP_TO_DATE;
 
 	__remap_node(map, existing_node);
 }
