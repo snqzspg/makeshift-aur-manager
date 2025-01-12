@@ -1,8 +1,11 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "aur.h"
 #include "pacman.h"
 #include "hashtable.h"
+
+#include "aur_pkg_parse.h"
 
 char *sample_packages[] = {
 	"dropbox",
@@ -20,22 +23,29 @@ int main(void) {
 
 	for (size_t i = 0; i < installed_pkgs.n_items; i++) {
 		if (installed_pkgs.pkg_names_vers[i].valid) {
-			hashtable_set_item(&installed_pkgs_dict, installed_pkgs.pkg_names_vers[i].name, installed_pkgs.pkg_names_vers[i].version, NULL, 0);
+			hashtable_set_item(&installed_pkgs_dict, installed_pkgs.pkg_names_vers[i].name, installed_pkgs.pkg_names_vers[i].version, NULL, 1);
 			pkg_namelist[actual_namelist_size] = installed_pkgs.pkg_names_vers[i].name;
 			actual_namelist_size++;
 		}
 	}
 
+	const char* response_json = get_packages_info((const char* const*) pkg_namelist, actual_namelist_size);
+	(void) printf("%s\n", response_json);
+
+	size_t res_json_len = strlen(response_json);
+	char mutable_res_json[res_json_len + 1];
+	(void) strncpy(mutable_res_json, response_json, res_json_len + 1);
+	clean_up_pkg_info_buffer();
+
+	process_response_json(mutable_res_json, &installed_pkgs_dict);
+
 	for (size_t i = 0; i < installed_pkgs.n_items; i++) {
 		if (installed_pkgs.pkg_names_vers[i].valid) {
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, installed_pkgs.pkg_names_vers[i].name);
-			(void) printf("{.name = \"%s\", .version = \"%s\"}\n", installed_pkgs.pkg_names_vers[i].name, found_node -> installed_ver);
+			(void) printf("{.name = \"%s\", .version = \"%s%s%s\"}\n", installed_pkgs.pkg_names_vers[i].name, found_node -> installed_ver, found_node -> is_non_aur ? "" : "\", .aur_ver = \"", found_node -> is_non_aur ? "" : found_node -> updated_ver);
 		}
 	}
-
-	const char* response_json = get_packages_info((const char* const*) pkg_namelist, actual_namelist_size);
-	(void) printf("%s\n", response_json);
-	clean_up_pkg_info_buffer();
+	
 	clean_up_pacman_output();
 	return 0;
 }
