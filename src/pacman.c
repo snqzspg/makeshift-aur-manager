@@ -112,56 +112,26 @@ pacman_names_vers_t ret_list = {
 pacman_names_vers_t get_installed_non_pacman() {
 	int pacman_pipe_fds[2];
 
-	// if (pipe(pacman_pipe_fds) < 0) {
-	// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-	// 	return PACMAN_PKGS_NULL_RET;
-	// }
-
 	run_syscall_print_err_w_ret(pipe(pacman_pipe_fds), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
 
 	int pacman_child_proc = fork();
 
 	if (pacman_child_proc == 0) {
 		run_syscall_print_err_w_ret(close(pacman_pipe_fds[0]), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
-		// if (close(pacman_pipe_fds[0]) < 0) {
-		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		// 	return PACMAN_PKGS_NULL_RET;
-		// }
-
 		run_syscall_print_err_w_ret(dup2(pacman_pipe_fds[1], STDOUT_FILENO), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
-		// if (dup2(pacman_pipe_fds[1], STDOUT_FILENO) < 0) {
-		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		// 	return PACMAN_PKGS_NULL_RET;
-		// }
-
 		run_syscall_print_err_w_ret(close(pacman_pipe_fds[1]), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
-		// if (close(pacman_pipe_fds[1]) < 0) {
-		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		// 	return PACMAN_PKGS_NULL_RET;
-		// }
-		
+
 		run_syscall_print_err_w_ret(execl("/usr/bin/pacman", "pacman", "-Qm", (char *) NULL), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
-		// if (execl("/usr/bin/pacman", "pacman", "-Qm", (char *) NULL) < 0) {
-		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		// 	return PACMAN_PKGS_NULL_RET;
-		// }
+
 		return PACMAN_PKGS_NULL_RET;
 	} else if (pacman_child_proc == -1) {
 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
 		return PACMAN_PKGS_NULL_RET;
 	} else {
 		run_syscall_print_err_w_ret(close(pacman_pipe_fds[1]), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
-		// if (close(pacman_pipe_fds[1]) < 0) {
-		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		// 	return PACMAN_PKGS_NULL_RET;
-		// }
 
 		int pacman_exit_stat;
 		run_syscall_print_err_w_ret(waitpid(pacman_child_proc, &pacman_exit_stat, 0), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
-		// if (waitpid(pacman_child_proc, &pacman_exit_stat, 0) < 0) {
-		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		// 	return PACMAN_PKGS_NULL_RET;
-		// }
 
 		int pacman_ret_code = WEXITSTATUS(pacman_exit_stat);
 
