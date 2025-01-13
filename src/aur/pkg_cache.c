@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -83,7 +84,7 @@ int fetch_pkg_base(const char* pkg_base) {
 
 	size_t url_len = gen_aur_git_url(NULL, 0, pkg_base);
 	char fetch_url[url_len + 1];
-	(void) gen_aur_git_url(NULL, 0, pkg_base);
+	(void) gen_aur_git_url(fetch_url, url_len + 1, pkg_base);
 
 	size_t dest_len = snprintf(NULL, 0, "%s/%s", pkg_cache_folder, pkg_base);
 	char dest[dest_len + 1];
@@ -109,7 +110,7 @@ int fetch_pkg_base(const char* pkg_base) {
 		run_syscall_print_err_w_ret(waitpid(git_subprocess, &git_proc_stat, 0), -1, __FILE__, __LINE__);
 
 		if (!WIFEXITED(git_proc_stat)) {
-			(void) fprintf(stderr, "[WARNING] pacman exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
 			return -1;
 		}
 
@@ -129,22 +130,135 @@ char is_pkg_in_cache(const char* pkg_name, const char* pkg_base) {
 	return 1;
 }
 
-int git_clone_aur_pkgs(char** pkg_bases, size_t n_pkg_bases) {
+void git_clone_aur_pkgs(char** pkg_bases, size_t n_pkg_bases) {
 	for (size_t i = 0; i < n_pkg_bases; i++) {
 		if (pkg_base_in_cache(pkg_bases[i])) {
 			continue;
 		}
 
-		fetch_pkg_base(pkg_bases[i]);
+		(void) fetch_pkg_base(pkg_bases[i]);
 	}
 }
 
-int git_reset_aur_pkgs(char** pkg_bases, size_t n_pkg_bases) {
+char is_pwd_git_repo() {
+	int git_subprocess = fork();
+
+	if (git_subprocess == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		return 1;
+	} else if (git_subprocess == 0) {
+		int null_fd = open("/dev/null", O_WRONLY);
+
+		run_syscall_print_err_w_ret(dup2(null_fd, STDOUT_FILENO), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_ret(dup2(null_fd, STDERR_FILENO), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_ret(close(null_fd), -1, __FILE__, __LINE__);
+
+		if (execl("/usr/bin/git", "git", "status", NULL) < 0) {
+			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return -1;
+		}
+
+		_exit(-1);
+		return -1;
+	} else {
+		int git_proc_stat;
+		(void) waitpid(git_subprocess, &git_proc_stat, 0);
+
+		if (WEXITSTATUS(git_proc_stat) != 0) {
+			// (void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/**
+ * WARNING: A potentially destructive function when tested inside
+ *          a git repo!!
+ */
+int reset_pkg_base(const char* pkg_base) {
+	if (!does_pkg_cache_exist() || !pkg_base_in_cache(pkg_base)) {
+		return 0;
+	}
+
+	size_t dir_len = write_pkg_base_path(NULL, 0, pkg_base);
+	char   dir[dir_len + 1];
+	(void) write_pkg_base_path(dir, dir_len + 1, pkg_base);
+
+	int git_subprocess = fork();
+
+	if (git_subprocess == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		return -1;
+	} else if (git_subprocess == 0) {
+		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for git to %s\033[0m ---\n", dir);
+
+		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+
+		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/git reset --hard\033[0m ---\n");
+
+		if (execl("/usr/bin/git", "git", "reset", "--hard", NULL) < 0) {
+			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return -1;
+		}
+
+		_exit(-1);
+		return -1;
+	} else {
+		int git_proc_stat;
+		run_syscall_print_err_w_ret(waitpid(git_subprocess, &git_proc_stat, 0), -1, __FILE__, __LINE__);
+
+		if (!WIFEXITED(git_proc_stat)) {
+			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			return -1;
+		}
+	}
+
+	git_subprocess = fork();
+
+	if (git_subprocess == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		return -1;
+	} else if (git_subprocess == 0) {
+		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for git to %s\033[0m ---\n", dir);
+
+		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+
+		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/git clean -ffxd\033[0m ---\n");
+
+		if (execl("/usr/bin/git", "git", "clean", "-ffxd", NULL) < 0) {
+			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return -1;
+		}
+
+		_exit(-1);
+		return -1;
+	} else {
+		int git_proc_stat;
+		run_syscall_print_err_w_ret(waitpid(git_subprocess, &git_proc_stat, 0), -1, __FILE__, __LINE__);
+
+		if (!WIFEXITED(git_proc_stat)) {
+			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * WARNING: A potentially destructive function when tested inside
+ *          a git repo!!
+ */
+void git_reset_aur_pkgs(char** pkg_bases, size_t n_pkg_bases) {
 	for (size_t i = 0; i < n_pkg_bases; i++) {
-		if (pkg_base_in_cache(pkg_bases[i])) {
+		if (!pkg_base_in_cache(pkg_bases[i])) {
 			continue;
 		}
 
-		fetch_pkg_base(pkg_bases[i]);
+		reset_pkg_base(pkg_bases[i]);
 	}
 }

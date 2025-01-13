@@ -3,4 +3,14 @@
 
 int fetch_pkg_base(const char* pkg_base);
 
+char is_pwd_git_repo();
+
+void git_clone_aur_pkgs(char** pkg_bases, size_t n_pkg_bases);
+
+/**
+ * WARNING: A potentially destructive function when tested inside
+ *          a git repo!!
+ */
+void git_reset_aur_pkgs(char** pkg_bases, size_t n_pkg_bases);
+
 #endif // PKG_CACHE_H_INCLUDED
