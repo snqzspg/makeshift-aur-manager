@@ -30,4 +30,3 @@ clean:
 	-rm -d $(dir $(exec_out))
 	-rm $(obj_files)
 	-rm -d $(dir $(obj_files))
-	-rm -d bin
