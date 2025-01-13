@@ -34,7 +34,7 @@ size_t write_pkg_base_path(char* __restrict__ dest, size_t limit, const char* pk
 		return path_len - 1;
 	}
 
-	(void) strncat(dest, pkg_cache_folder, limit);
+	(void) strncpy(dest, pkg_cache_folder, limit);
 	(void) strncat(dest, "/", limit);
 	(void) strncat(dest, pkg_base, limit);
 
@@ -62,9 +62,9 @@ char pkg_base_folder_exists(const char* pkg_base) {
 
 	char path[path_len];
 
-	(void) strncat(path, pkg_cache_folder, path_len);
-	(void) strncat(path, "/", path_len);
-	(void) strncat(path, pkg_base, path_len);
+	(void) strncpy(path, pkg_cache_folder, path_len + 1);
+	(void) strncat(path, "/", path_len + 1);
+	(void) strncat(path, pkg_base, path_len + 1);
 
 	return stat(path, &sb) == 0 && S_ISDIR(sb.st_mode);
 }
