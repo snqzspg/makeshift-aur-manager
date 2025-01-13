@@ -158,7 +158,6 @@ int main(int argc, char** argv) {
 	}
 
 	const char* response_json = get_packages_info((const char* const*) pkg_namelist, actual_namelist_size);
-	// (void) printf("%s\n", response_json);
 
 	size_t res_json_len = strlen(response_json);
 	char mutable_res_json[res_json_len + 1];
