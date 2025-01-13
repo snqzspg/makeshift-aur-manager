@@ -178,6 +178,15 @@ char is_pwd_git_repo() {
  *          a git repo!!
  */
 int reset_pkg_base(const char* pkg_base) {
+	if (is_pwd_git_repo()) {
+		(void) write(STDERR_FILENO, 
+			"--- \033[1;31mGIT RESET PACKAGE ABORTED\033[0m!!! ---\n"
+			"This process involves \"git reset --hard\" and \"git clean -ffxd\", both are \033[1;31mdestructive git commands\033[0m.\n"
+			"The present working directory (pwd) is detected to be a git repository. To avoid losing unstaged changes, this process is being aborted.\n"
+		, 295);
+		return -1;
+	}
+
 	if (!does_pkg_cache_exist() || !pkg_base_in_cache(pkg_base)) {
 		return 0;
 	}
@@ -254,6 +263,15 @@ int reset_pkg_base(const char* pkg_base) {
  *          a git repo!!
  */
 void git_reset_aur_pkgs(char** pkg_bases, size_t n_pkg_bases) {
+	if (is_pwd_git_repo()) {
+		(void) write(STDERR_FILENO, 
+			"--- \033[1;31mGIT RESET PACKAGE ABORTED\033[0m!!! ---\n"
+			"This process involves \"git reset --hard\" and \"git clean -ffxd\", both are \033[1;31mdestructive git commands\033[0m.\n"
+			"The present working directory (pwd) is detected to be a git repository. To avoid losing unstaged changes, this process is being aborted.\n"
+		, 295);
+		return;
+	}
+
 	for (size_t i = 0; i < n_pkg_bases; i++) {
 		if (!pkg_base_in_cache(pkg_bases[i])) {
 			continue;
