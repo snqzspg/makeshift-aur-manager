@@ -280,3 +280,135 @@ void git_reset_aur_pkgs(char** pkg_bases, size_t n_pkg_bases) {
 		reset_pkg_base(pkg_bases[i]);
 	}
 }
+
+/**
+ * WARNING: A potentially destructive function when tested inside
+ *          a git repo!!
+ */
+int update_existing_pkg_base(const char* pkg_base) {
+	if (!does_pkg_cache_exist() || !pkg_base_in_cache(pkg_base)) {
+		return 0;
+	}
+
+	if (reset_pkg_base(pkg_base) < 0) {
+		return -1;
+	}
+
+	size_t dir_len = write_pkg_base_path(NULL, 0, pkg_base);
+	char   dir[dir_len + 1];
+	(void) write_pkg_base_path(dir, dir_len + 1, pkg_base);
+
+	int git_subprocess = fork();
+
+	if (git_subprocess == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		return -1;
+	} else if (git_subprocess == 0) {
+		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for git to %s\033[0m ---\n", dir);
+
+		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+
+		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/git fetch\033[0m ---\n");
+
+		if (execl("/usr/bin/git", "git", "fetch", NULL) < 0) {
+			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return -1;
+		}
+
+		_exit(-1);
+		return -1;
+	} else {
+		int git_proc_stat;
+		run_syscall_print_err_w_ret(waitpid(git_subprocess, &git_proc_stat, 0), -1, __FILE__, __LINE__);
+
+		if (WEXITSTATUS(git_proc_stat) != 0) {
+			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			return -1;
+		}
+	}
+
+	git_subprocess = fork();
+
+	if (git_subprocess == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		return -1;
+	} else if (git_subprocess == 0) {
+		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for git to %s\033[0m ---\n", dir);
+
+		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+
+		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/git rebase\033[0m ---\n");
+
+		if (execl("/usr/bin/git", "git", "rebase", NULL) < 0) {
+			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return -1;
+		}
+
+		_exit(-1);
+		return -1;
+	} else {
+		int git_proc_stat;
+		run_syscall_print_err_w_ret(waitpid(git_subprocess, &git_proc_stat, 0), -1, __FILE__, __LINE__);
+
+		if (WEXITSTATUS(git_proc_stat) != 0) {
+			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int build_existing_pkg_base(const char* pkg_base) {
+	if (!does_pkg_cache_exist() || !pkg_base_in_cache(pkg_base)) {
+		return 0;
+	}
+
+	size_t dir_len = write_pkg_base_path(NULL, 0, pkg_base);
+	char   dir[dir_len + 1];
+	(void) write_pkg_base_path(dir, dir_len + 1, pkg_base);
+
+	int makepkg_subprocess = fork();
+
+	if (makepkg_subprocess == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		return -1;
+	} else if (makepkg_subprocess == 0) {
+		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", dir);
+
+		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+
+		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg -s\033[0m ---\n");
+
+		if (execl("/usr/bin/makepkg", "makepkg", "-s", NULL) < 0) {
+			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return -1;
+		}
+
+		_exit(-1);
+		return -1;
+	} else {
+		int makepkg_stat;
+		run_syscall_print_err_w_ret(waitpid(makepkg_subprocess, &makepkg_stat, 0), -1, __FILE__, __LINE__);
+
+		if (WEXITSTATUS(makepkg_stat) != 0) {
+			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(makepkg_stat));
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+void build_aur_pkgs(char** pkg_bases, size_t n_pkg_bases) {
+	for (size_t i = 0; i < n_pkg_bases; i++) {
+		if (!pkg_base_in_cache(pkg_bases[i])) {
+			continue;
+		}
+
+		(void) build_existing_pkg_base(pkg_bases[i]);
+	}
+}
