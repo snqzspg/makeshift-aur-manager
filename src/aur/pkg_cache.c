@@ -47,6 +47,114 @@ size_t write_pkg_base_path(char* __restrict__ dest, size_t limit, const char* pk
 	return limit < path_len ? limit : path_len;
 }
 
+const char* f_suffix = ".pkg.tar.zst";
+char* pkg_file_path_stash = NULL;
+
+size_t write_pkg_file_path(char* __restrict__ dest, size_t limit, const char* pkg_name, const char* pkg_base, char quiet) {
+	if (pkg_file_path_stash != NULL) {
+		if (dest == NULL) {
+			return strlen(pkg_file_path_stash);
+		}
+
+		(void) strncpy(dest, pkg_file_path_stash, limit);
+		size_t rlen = strlen(pkg_file_path_stash);
+		free(pkg_file_path_stash);
+		pkg_file_path_stash = NULL;
+		return rlen;
+	}
+
+	size_t pkgbase_path_len = write_pkg_base_path(NULL, 0, pkg_base);
+	char pkgbase_path[pkgbase_path_len + 1];
+	write_pkg_base_path(pkgbase_path, pkgbase_path_len + 1, pkg_base);
+
+	char* srcpkg_ver = extract_existing_pkg_base_ver(pkg_base, 0);
+
+	size_t pkg_ver_str_len = snprintf(NULL, 0, "%s-%s", pkg_name, srcpkg_ver);
+	char   pkg_ver_str[pkg_ver_str_len + 1];
+
+	(void) snprintf(pkg_ver_str, pkg_ver_str_len + 1, "%s-%s", pkg_name, srcpkg_ver);
+	
+	int output_fds[2];
+
+	run_syscall_print_err_w_ret(pipe(output_fds), 0, __FILE__, __LINE__);
+
+	int makepkg_subprocess = fork();
+
+	if (makepkg_subprocess == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		return 0;
+	} else if (makepkg_subprocess == 0) {
+		run_syscall_print_err_w_ret(close(output_fds[0]), 0, __FILE__, __LINE__);
+		run_syscall_print_err_w_ret(dup2(output_fds[1], STDOUT_FILENO), 0, __FILE__, __LINE__);
+		run_syscall_print_err_w_ret(close(output_fds[1]), 0, __FILE__, __LINE__);
+
+		if (!quiet)
+			(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", pkgbase_path);
+
+		run_syscall_print_err_w_ret(chdir(pkgbase_path), 0, __FILE__, __LINE__);
+
+		if (!quiet)
+			(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg --packagelist\033[0m ---\n");
+
+		if (execl("/usr/bin/makepkg", "makepkg", "--packagelist", NULL) < 0) {
+			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return 0;
+		}
+
+		_exit(-1);
+		return 0;
+	} else {
+		run_syscall_print_err_w_ret(close(output_fds[1]), 0, __FILE__, __LINE__);
+
+		int makepkg_stat;
+		run_syscall_print_err_w_ret(waitpid(makepkg_subprocess, &makepkg_stat, 0), 0, __FILE__, __LINE__);
+
+		if (WEXITSTATUS(makepkg_stat) != 0) {
+			(void) fprintf(stderr, "[WARNING] makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
+			return 0;
+		}
+	}
+
+	streamed_content_t pkglist_stream = stream_fd_content_alloc(output_fds[0]);
+
+	if (pkglist_stream.content == NULL) {
+		return 0;
+	}
+
+	char* tok = strtok(pkglist_stream.content, "\n");
+
+	if (tok == NULL) {
+		(void) fprintf(stderr, "--- \033[1;31m%s reports no package file for %s!\033[0m ---\n", pkg_base, pkg_name);
+		return 0;
+	}
+
+	while (tok != NULL) {
+		if (strstr(tok, pkg_ver_str) != NULL) {
+			break;
+		}
+
+		tok = strtok(NULL, "\n");
+	}
+
+	if (tok == NULL) {
+		(void) fprintf(stderr, "--- \033[1;31mCould not find package file for %s!\033[0m ---\n", pkg_name);
+		return 0;
+	}
+
+	size_t toklen = strlen(tok);
+
+	pkg_file_path_stash = (char*) malloc((toklen + 1) * sizeof(char));
+	if (pkg_file_path_stash == NULL) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
+		stream_fd_content_dealloc(&pkglist_stream);
+		return 0;
+	}
+	(void) strncpy(pkg_file_path_stash, tok, toklen + 1);
+	stream_fd_content_dealloc(&pkglist_stream);
+	return toklen;
+}
+
 static const char* aur_url_fmt = "https://aur.archlinux.org/%s.git";
 
 int gen_aur_git_url(char* __restrict__ dest, size_t limit, const char* pkg_base) {
