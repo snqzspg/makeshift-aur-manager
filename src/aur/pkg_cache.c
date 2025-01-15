@@ -11,6 +11,7 @@
 
 #include "../unistd_helper.h"
 #include "pkg_cache.h"
+#include "../file_utils.h"
 
 char* pkg_cache_folder = "__pkg_cache__";
 int   pkg_cache_folder_len = 13;
@@ -469,78 +470,153 @@ char* extract_existing_pkg_base_ver(const char* pkg_base, char quiet) {
 		}
 	}
 
-	char output_buf[1025];
-	
-	for(;;) {
-		int r_size = read(output_fds[0], output_buf, 1024);
+	streamed_content_t streamed_output = stream_fd_content_alloc(output_fds[0]);
 
-		if (r_size < 0) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
-			return NULL;
-		}
-
-		if (r_size == 0) {
-			return NULL;
-		}
-
-		output_buf[1024] = '\0';
-
-		// Finding needle in haystack, needle is the string to find.
-		char*  needle     = "pkgver = ";
-		size_t needle_len = strlen(needle);
-		
-		char* found_loc = strstr(output_buf, needle);
-		if (found_loc == NULL) {
-			continue;
-		}
-
-		char* end_loc = strchr(found_loc, '\n');
-		if (end_loc != NULL) {
-			*end_loc = '\0';
-			char* pkgver      = found_loc + needle_len;
-			size_t pkgver_len = strlen(pkgver);
-			if (extract_existing_ver_ret == NULL) {
-				extract_existing_ver_ret = (char*) malloc((pkgver_len + 1) * sizeof(char));
-			} else {
-				extract_existing_ver_ret = (char*) realloc(extract_existing_ver_ret, (pkgver_len + 1) * sizeof(char));
-			}
-			if (extract_existing_ver_ret == NULL) {
-				perror("[ERROR][extract_existing_pkg_base_ver]");
-				return NULL;
-			}
-			(void) strncpy(extract_existing_ver_ret, pkgver, pkgver_len + 1);
-			return extract_existing_ver_ret;
-		}
-
-		char second_part[1025];
-		r_size = read(output_fds[0], second_part, 1024);
-
-		if (r_size == 0) {
-			return NULL;
-		}
-
-		output_buf[1024] = '\0';
-		end_loc = strchr(second_part, '\n');
-		if (end_loc == NULL) {
-			return NULL;
-		}
-		*end_loc = '\0';
-		size_t total_len = strlen(found_loc) + strlen(second_part);
-		if (extract_existing_ver_ret == NULL) {
-			extract_existing_ver_ret = (char*) malloc((total_len + 1) * sizeof(char));
-		} else {
-			extract_existing_ver_ret = (char*) realloc(extract_existing_ver_ret, (total_len + 1) * sizeof(char));
-		}
-		if (extract_existing_ver_ret == NULL) {
-			perror("[ERROR][extract_existing_pkg_base_ver]");
-			return NULL;
-		}
-		(void) strncpy(extract_existing_ver_ret, found_loc, total_len + 1);
-		(void) strncat(extract_existing_ver_ret, second_part, total_len + 1);
-		return extract_existing_ver_ret;
+	if (streamed_output.content == NULL) {
+		return NULL;
 	}
 
-	return NULL;
+	char*  needle     = "pkgver = ";
+	size_t needle_len = strlen(needle);
+	
+	char* found_loc = strstr(streamed_output.content, needle);
+	if (found_loc == NULL) {
+		(void) fprintf(stderr, "--- \033[1;31mCould not produce pkgver.\033[0m ---\n");
+		return NULL;
+	}
+	char* end_loc = strchr(found_loc, '\n');
+	if (end_loc == NULL) {
+		(void) fprintf(stderr, "--- \033[1;31mString doesn't end with newline?\033[0m ---\n");
+		return NULL;
+	}
+
+	*end_loc = '\0';
+
+	char*  pkgver     = found_loc + needle_len;
+	size_t pkgver_len = strlen(pkgver);
+
+	char*  pkgrel     = "";
+	size_t pkgrel_len = 0;
+
+	needle     = "pkgrel = ";
+	needle_len = strlen(needle);
+	
+	found_loc = strstr(end_loc + 1, needle);
+	if (found_loc != NULL) {
+		end_loc = strchr(found_loc, '\n');
+		if (end_loc != NULL) {
+			*end_loc = '\0';
+
+			pkgrel     = found_loc + needle_len;
+			pkgrel_len = strlen(pkgrel);
+		}
+	}
+
+	char*  epoch     = "";
+	size_t epoch_len = 0;
+
+	needle     = "epoch = ";
+	needle_len = strlen(needle);
+	
+	found_loc = strstr(end_loc + 1, needle);
+	if (found_loc != NULL) {
+		end_loc = strchr(found_loc, '\n');
+		if (end_loc != NULL) {
+			*end_loc = '\0';
+
+			epoch     = found_loc + needle_len;
+			epoch_len = strlen(epoch);
+		}
+	}
+
+	size_t ver_s_len = snprintf(NULL, 0, "%s%s%s%s%s", epoch, epoch_len == 0 ? "" : ":", pkgver, pkgrel_len == 0 ? "" : "-", pkgrel);
+
+	if (extract_existing_ver_ret == NULL) {
+		extract_existing_ver_ret = (char*) malloc((ver_s_len + 1) * sizeof(char));
+	} else {
+		extract_existing_ver_ret = (char*) realloc(extract_existing_ver_ret, (ver_s_len + 1) * sizeof(char));
+	}
+	if (extract_existing_ver_ret == NULL) {
+		perror("[ERROR][extract_existing_pkg_base_ver]");
+		return NULL;
+	}
+
+	(void) snprintf(extract_existing_ver_ret, ver_s_len + 1, "%s%s%s%s%s", epoch, epoch_len == 0 ? "" : ":", pkgver, pkgrel_len == 0 ? "" : "-", pkgrel);
+
+	return extract_existing_ver_ret;
+
+	// char output_buf[1025];
+	
+	// for(;;) {
+	// 	int r_size = read(output_fds[0], output_buf, 1024);
+
+	// 	if (r_size < 0) {
+	// 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+	// 		return NULL;
+	// 	}
+
+	// 	if (r_size == 0) {
+	// 		return NULL;
+	// 	}
+
+	// 	output_buf[1024] = '\0';
+
+	// 	// Finding needle in haystack, needle is the string to find.
+	// 	char*  needle     = "pkgver = ";
+	// 	size_t needle_len = strlen(needle);
+		
+	// 	char* found_loc = strstr(output_buf, needle);
+	// 	if (found_loc == NULL) {
+	// 		continue;
+	// 	}
+
+	// 	char* end_loc = strchr(found_loc, '\n');
+	// 	if (end_loc != NULL) {
+	// 		*end_loc = '\0';
+	// 		char* pkgver      = found_loc + needle_len;
+	// 		size_t pkgver_len = strlen(pkgver);
+	// 		if (extract_existing_ver_ret == NULL) {
+	// 			extract_existing_ver_ret = (char*) malloc((pkgver_len + 1) * sizeof(char));
+	// 		} else {
+	// 			extract_existing_ver_ret = (char*) realloc(extract_existing_ver_ret, (pkgver_len + 1) * sizeof(char));
+	// 		}
+	// 		if (extract_existing_ver_ret == NULL) {
+	// 			perror("[ERROR][extract_existing_pkg_base_ver]");
+	// 			return NULL;
+	// 		}
+	// 		(void) strncpy(extract_existing_ver_ret, pkgver, pkgver_len + 1);
+	// 		return extract_existing_ver_ret;
+	// 	}
+
+	// 	char second_part[1025];
+	// 	r_size = read(output_fds[0], second_part, 1024);
+
+	// 	if (r_size == 0) {
+	// 		return NULL;
+	// 	}
+
+	// 	output_buf[1024] = '\0';
+	// 	end_loc = strchr(second_part, '\n');
+	// 	if (end_loc == NULL) {
+	// 		return NULL;
+	// 	}
+	// 	*end_loc = '\0';
+	// 	size_t total_len = strlen(found_loc) + strlen(second_part);
+	// 	if (extract_existing_ver_ret == NULL) {
+	// 		extract_existing_ver_ret = (char*) malloc((total_len + 1) * sizeof(char));
+	// 	} else {
+	// 		extract_existing_ver_ret = (char*) realloc(extract_existing_ver_ret, (total_len + 1) * sizeof(char));
+	// 	}
+	// 	if (extract_existing_ver_ret == NULL) {
+	// 		perror("[ERROR][extract_existing_pkg_base_ver]");
+	// 		return NULL;
+	// 	}
+	// 	(void) strncpy(extract_existing_ver_ret, found_loc, total_len + 1);
+	// 	(void) strncat(extract_existing_ver_ret, second_part, total_len + 1);
+	// 	return extract_existing_ver_ret;
+	// }
+
+	// return NULL;
 }
 
 void clean_up_extract_existing_pkg_base_ver() {
