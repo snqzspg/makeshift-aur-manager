@@ -26,10 +26,19 @@ void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t inst
 			continue;
 		}
 
-		char *col   = found_node -> update_type == UPGRADE ? "\033[32m" : (found_node -> update_type == DOWNGRADE ? "\033[31m" : "");
-		char *arrow = found_node -> update_type == UPGRADE ? "->" : (found_node -> update_type == DOWNGRADE ? "<-" : "==");
-		(void) printf("%s %s\033[1m%s\033[0m %s %s\033[1m%s\033[0m\n", pkg_namelist[i], col, found_node -> installed_ver, arrow, col, found_node -> updated_ver);
+		char* revised_updated_ver = extract_existing_pkg_base_ver(found_node -> package_base, 0);
+		if (revised_updated_ver == NULL) {
+			revised_updated_ver = found_node -> updated_ver;
+		}
+
+		int  vercmp = compare_versions(found_node -> installed_ver, revised_updated_ver);
+		enum update_stat revised_update_type = vercmp == 0 ? UP_TO_DATE : (vercmp < 0 ? UPGRADE : DOWNGRADE);
+
+		char *col   = revised_update_type == UPGRADE ? "\033[32m" : (revised_update_type == DOWNGRADE ? "\033[31m" : "");
+		char *arrow = revised_update_type == UPGRADE ? "->" : (revised_update_type == DOWNGRADE ? "<-" : "==");
+		(void) printf("%s %s\033[1m%s\033[0m %s %s\033[1m%s\033[0m\n", pkg_namelist[i], col, found_node -> installed_ver, arrow, col, revised_updated_ver);
 	}
+	clean_up_extract_existing_pkg_base_ver();
 }
 
 void aur_check_non_git_downgrades(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict) {
