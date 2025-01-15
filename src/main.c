@@ -189,10 +189,15 @@ void print_usage(const char* arg0) {
 	(void) fprintf(stderr, "       %s aur-checkupdates\n", arg0);
 	(void) fprintf(stderr, "       %s aur-fetchupdates\n", arg0);
 	(void) fprintf(stderr, "       %s aur-buildupdates\n", arg0);
+	(void) fprintf(stderr, "       %s aur-fetchgit\n", arg0);
 }
 
 int main(int argc, char** argv) {
 	if (argc > 1) {
+		if (strcmp(argv[1], "help") == 0) {
+			print_usage(argv[0]);
+			return EXIT_SUCCESS;
+		}
 		if (strcmp(argv[1], "pacman-checkupdates") == 0) {
 			return perform_pacman_checkupdates();
 		}
