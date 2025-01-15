@@ -7,10 +7,12 @@
 
 #include "aur.h"
 #include "aur/pkg_cache.h"
+#include "file_utils.h"
 #include "pacman.h"
 #include "hashtable.h"
 #include "unistd_helper.h"
 
+#include "aur/pkgver_cache.h"
 #include "aur_pkg_parse.h"
 
 static int pkg_name_cmp(const void* a, const void* b) {
@@ -19,16 +21,28 @@ static int pkg_name_cmp(const void* a, const void* b) {
 
 void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict) {
 	(void) write(STDOUT_FILENO, "--- \033[1;36mAUR Git Packages\033[0m ---\n", 36);
-	for (size_t i = 0; i < pkg_namelist_len; i++) {
+	pacman_names_vers_t* ver_cache = load_ver_cache();
+	for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
 		struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkg_namelist[i]);
 
 		if (found_node -> is_non_aur || !found_node -> is_git_package) {
 			continue;
 		}
 
-		char* revised_updated_ver = extract_existing_pkg_base_ver(found_node -> package_base, 0);
-		if (revised_updated_ver == NULL) {
-			revised_updated_ver = found_node -> updated_ver;
+		char* revised_updated_ver = found_node -> updated_ver;
+
+		if (j < ver_cache -> n_items) {
+			while (strcmp(pkg_namelist[i], ver_cache -> pkg_names_vers[j].name) > 0 && j < ver_cache -> n_items) {
+				j++;
+			}
+			if (strcmp(pkg_namelist[i], ver_cache -> pkg_names_vers[j].name) == 0) {
+				revised_updated_ver = ver_cache -> pkg_names_vers[j].version;
+			} else {
+				revised_updated_ver = extract_existing_pkg_base_ver(found_node -> package_base, 0);
+				if (revised_updated_ver == NULL) {
+					revised_updated_ver = found_node -> updated_ver;
+				}
+			}
 		}
 
 		int  vercmp = compare_versions(found_node -> installed_ver, revised_updated_ver);
@@ -39,6 +53,7 @@ void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t inst
 		(void) printf("%s %s\033[1m%s\033[0m %s %s\033[1m%s\033[0m\n", pkg_namelist[i], col, found_node -> installed_ver, arrow, col, revised_updated_ver);
 	}
 	clean_up_extract_existing_pkg_base_ver();
+	discard_ver_cache();
 }
 
 void aur_check_non_git_downgrades(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict) {
@@ -78,6 +93,7 @@ enum __aur_fetch_mode {
 };
 
 void aur_fetch_non_git_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type) {
+	size_t pkg_count = 0;
 	for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
 		if (ignore_list != NULL && j < ignore_list_len) {
 			int c = strcmp(pkg_namelist[i], ignore_list[j]);
@@ -112,6 +128,59 @@ void aur_fetch_non_git_updates(char **pkg_namelist, size_t pkg_namelist_len, has
 		}
 
 		(void) fetch_pkg_base(found_node -> package_base == NULL ? pkg_namelist[i] : found_node -> package_base);
+		pkg_count++;
+	}
+
+	if (fetch_type == GIT) {
+		pacman_name_ver_t merge_list[pkg_count];
+		char* new_vers[pkg_count];
+		size_t c = 0;
+
+		for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
+			if (ignore_list != NULL && j < ignore_list_len) {
+				int c = strcmp(pkg_namelist[i], ignore_list[j]);
+				while (j < ignore_list_len && c > 0) {
+					j++;
+				}
+				if (c == 0) {
+					j++;
+					continue;
+				}
+			}
+			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkg_namelist[i]);
+
+			if (found_node -> is_non_aur) {
+				continue;
+			}
+
+			if (fetch_type == GIT && !found_node -> is_git_package) {
+				continue;
+			}
+
+			update_existing_git_pkg_base(found_node -> package_base);
+
+			merge_list[c].name = pkg_namelist[i];
+			merge_list[c].valid = 1;
+			char* v = extract_existing_pkg_base_ver(found_node -> package_base, 0);
+			if (v == NULL) {
+				v = found_node -> updated_ver;
+				new_vers[c] = NULL;
+			} else {
+				new_vers[c] = (char*) malloc((strlen(v) + 1) * sizeof(char));
+				(void) strncpy(new_vers[c], v, strlen(v) + 1);
+				v = new_vers[c];
+			}
+			merge_list[c].version = v;
+			c++;
+		}
+
+		(void) load_ver_cache();
+		merge_in_ver_cache(merge_list, pkg_count);
+		save_ver_cache();
+		discard_ver_cache();
+		for (size_t i = 0; i < pkg_count; i++) {
+			free(new_vers[i]);
+		}
 	}
 }
 
