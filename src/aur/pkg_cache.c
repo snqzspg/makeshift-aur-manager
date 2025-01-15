@@ -412,3 +412,179 @@ void build_aur_pkgs(char** pkg_bases, size_t n_pkg_bases) {
 		(void) build_existing_pkg_base(pkg_bases[i]);
 	}
 }
+
+char* extract_existing_ver_ret = NULL;
+
+char* extract_existing_pkg_base_ver(const char* pkg_base, char quiet) {
+	if (!does_pkg_cache_exist() || !pkg_base_in_cache(pkg_base)) {
+		return NULL;
+	}
+
+	size_t dir_len = write_pkg_base_path(NULL, 0, pkg_base);
+	char   dir[dir_len + 1];
+	(void) write_pkg_base_path(dir, dir_len + 1, pkg_base);
+
+	int output_fds[2];
+
+	run_syscall_print_err_w_ret(pipe(output_fds), NULL, __FILE__, __LINE__);
+
+	int makepkg_subprocess = fork();
+
+	if (makepkg_subprocess == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		return NULL;
+	} else if (makepkg_subprocess == 0) {
+		run_syscall_print_err_w_ret(close(output_fds[0]), NULL, __FILE__, __LINE__);
+		run_syscall_print_err_w_ret(dup2(output_fds[1], STDOUT_FILENO), NULL, __FILE__, __LINE__);
+		run_syscall_print_err_w_ret(close(output_fds[1]), NULL, __FILE__, __LINE__);
+
+		if (!quiet)
+			(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", dir);
+
+		run_syscall_print_err_w_ret(chdir(dir), NULL, __FILE__, __LINE__);
+
+		if (!quiet)
+			(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg --printsrcinfo\033[0m ---\n");
+
+		if (execl("/usr/bin/makepkg", "makepkg", "--printsrcinfo", NULL) < 0) {
+			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return NULL;
+		}
+
+		_exit(-1);
+		return NULL;
+	} else {
+		run_syscall_print_err_w_ret(close(output_fds[1]), NULL, __FILE__, __LINE__);
+
+		int makepkg_stat;
+		run_syscall_print_err_w_ret(waitpid(makepkg_subprocess, &makepkg_stat, 0), NULL, __FILE__, __LINE__);
+
+		if (WEXITSTATUS(makepkg_stat) != 0) {
+			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(makepkg_stat));
+			return NULL;
+		}
+	}
+
+	char output_buf[1025];
+	
+	for(;;) {
+		int r_size = read(output_fds[0], output_buf, 1024);
+
+		if (r_size < 0) {
+			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+			return NULL;
+		}
+
+		if (r_size == 0) {
+			return NULL;
+		}
+
+		output_buf[1024] = '\0';
+
+		// Finding needle in haystack, needle is the string to find.
+		char*  needle     = "pkgver = ";
+		size_t needle_len = strlen(needle);
+		
+		char* found_loc = strstr(output_buf, needle);
+		if (found_loc == NULL) {
+			continue;
+		}
+
+		char* end_loc = strchr(found_loc, '\n');
+		if (end_loc != NULL) {
+			*end_loc = '\0';
+			char* pkgver      = found_loc + needle_len;
+			size_t pkgver_len = strlen(pkgver);
+			if (extract_existing_ver_ret == NULL) {
+				extract_existing_ver_ret = (char*) malloc((pkgver_len + 1) * sizeof(char));
+			} else {
+				extract_existing_ver_ret = (char*) realloc(extract_existing_ver_ret, (pkgver_len + 1) * sizeof(char));
+			}
+			if (extract_existing_ver_ret == NULL) {
+				perror("[ERROR][extract_existing_pkg_base_ver]");
+				return NULL;
+			}
+			(void) strncpy(extract_existing_ver_ret, pkgver, pkgver_len + 1);
+			return extract_existing_ver_ret;
+		}
+
+		char second_part[1025];
+		r_size = read(output_fds[0], second_part, 1024);
+
+		if (r_size == 0) {
+			return NULL;
+		}
+
+		output_buf[1024] = '\0';
+		end_loc = strchr(second_part, '\n');
+		if (end_loc == NULL) {
+			return NULL;
+		}
+		*end_loc = '\0';
+		size_t total_len = strlen(found_loc) + strlen(second_part);
+		if (extract_existing_ver_ret == NULL) {
+			extract_existing_ver_ret = (char*) malloc((total_len + 1) * sizeof(char));
+		} else {
+			extract_existing_ver_ret = (char*) realloc(extract_existing_ver_ret, (total_len + 1) * sizeof(char));
+		}
+		if (extract_existing_ver_ret == NULL) {
+			perror("[ERROR][extract_existing_pkg_base_ver]");
+			return NULL;
+		}
+		(void) strncpy(extract_existing_ver_ret, found_loc, total_len + 1);
+		(void) strncat(extract_existing_ver_ret, second_part, total_len + 1);
+		return extract_existing_ver_ret;
+	}
+
+	return NULL;
+}
+
+void clean_up_extract_existing_pkg_base_ver() {
+	if (extract_existing_ver_ret != NULL) {
+		free(extract_existing_ver_ret);
+		extract_existing_ver_ret = NULL;
+	}
+}
+
+int update_existing_git_pkg_base(const char* pkg_base) {
+	if (!does_pkg_cache_exist() || !pkg_base_in_cache(pkg_base)) {
+		return 0;
+	}
+
+	size_t dir_len = write_pkg_base_path(NULL, 0, pkg_base);
+	char   dir[dir_len + 1];
+	(void) write_pkg_base_path(dir, dir_len + 1, pkg_base);
+
+	int makepkg_subprocess = fork();
+
+	if (makepkg_subprocess == -1) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		return -1;
+	} else if (makepkg_subprocess == 0) {
+		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", dir);
+
+		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+
+		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg -o\033[0m ---\n");
+
+		if (execl("/usr/bin/makepkg", "makepkg", "-o", NULL) < 0) {
+			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return -1;
+		}
+
+		_exit(-1);
+		return -1;
+	} else {
+		int makepkg_stat;
+		run_syscall_print_err_w_ret(waitpid(makepkg_subprocess, &makepkg_stat, 0), -1, __FILE__, __LINE__);
+
+		if (WEXITSTATUS(makepkg_stat) != 0) {
+			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(makepkg_stat));
+			return -1;
+		}
+	}
+
+	return 0;
+}

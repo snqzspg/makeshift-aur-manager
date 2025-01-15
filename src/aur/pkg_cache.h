@@ -16,4 +16,9 @@ void git_reset_aur_pkgs(char** pkg_bases, size_t n_pkg_bases);
 
 void build_aur_pkgs(char** pkg_bases, size_t n_pkg_bases);
 
+char* extract_existing_pkg_base_ver(const char* pkg_base, char quiet);
+void clean_up_extract_existing_pkg_base_ver();
+
+int update_existing_git_pkg_base(const char* pkg_base);
+
 #endif // PKG_CACHE_H_INCLUDED
