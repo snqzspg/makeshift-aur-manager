@@ -163,6 +163,8 @@ int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_
 	} else {
 		run_syscall_print_err_w_ret(close(less_pipe_fds[1]), -1, __FILE__, __LINE__);
 
+		(void) waitpid(aur_upd_child, NULL, 0);
+
 		int less_child = fork();
 
 		if (less_child == -1) {
