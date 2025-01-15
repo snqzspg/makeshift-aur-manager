@@ -1,8 +1,10 @@
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -546,6 +548,72 @@ void clean_up_extract_existing_pkg_base_ver() {
 		free(extract_existing_ver_ret);
 		extract_existing_ver_ret = NULL;
 	}
+}
+
+void stream_ver_to_main_proc(const char* pkg_base, int write_fd, size_t* slen_out) {
+	char* ver = extract_existing_pkg_base_ver(pkg_base, 1);
+	*slen_out = strlen(ver);
+	int r = write(write_fd, ver, strlen(ver));
+	clean_up_extract_existing_pkg_base_ver();
+	if (r < 0) {
+		_exit(errno);
+	}
+	_exit(0);
+}
+
+int (*mp_extr_fd_matrix)[2] = NULL;
+void extract_ver_from_pkgs_muti_proc(char** __restrict__ s_out, size_t* __restrict__ slens_out, const char* pkg_bases[], size_t n_items) {
+	if (mp_extr_fd_matrix != NULL) {
+		if (s_out == NULL || slens_out == NULL) {
+			return;
+		}
+		for (size_t i = 0; i < n_items; i++) {
+			int r = read(mp_extr_fd_matrix[i][0], s_out[i], slens_out[i]);
+			assert(r == slens_out[i]);
+			run_syscall_print_err(close(mp_extr_fd_matrix[i][0]), __FILE__, __LINE__);
+		}
+		return;
+	}
+
+	mp_extr_fd_matrix = malloc(n_items * sizeof(int[2]));
+	int child_ids[n_items];
+
+	int shmid = shmget(IPC_PRIVATE, n_items * sizeof(size_t), IPC_CREAT | 0600);
+	size_t* strlens = shmat(shmid, NULL, 0);
+
+	for (size_t i = 0; i < n_items; i++) {
+		run_syscall_print_err(pipe(mp_extr_fd_matrix[i]), __FILE__, __LINE__);
+
+		int child = fork();
+		child_ids[i] = child;
+
+		if (child < 0) {
+			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 4, strerror(errno));
+			return;
+		} else if (child == 0) {
+			run_syscall_print_err(close(mp_extr_fd_matrix[i][0]), __FILE__, __LINE__);
+			stream_ver_to_main_proc(pkg_bases[i], mp_extr_fd_matrix[i][1], strlens + i);
+		} else {
+			run_syscall_print_err(close(mp_extr_fd_matrix[i][1]), __FILE__, __LINE__);
+		}
+	}
+
+	size_t total_str_len = 0;
+	for (size_t i = 0; i < n_items; i++) {
+		int stat;
+		(void) waitpid(child_ids[i], &stat, 0);
+		
+		if (WEXITSTATUS(stat) != 0) {
+			(void) fprintf(stderr, "[WARNING][extract_proc_%d][SUBPROCESS_ERROR] %s\n", i, strerror(WEXITSTATUS(stat)));
+		}
+
+		if (slens_out != NULL) {
+			slens_out[i] = strlens[i];
+		}
+	}
+
+	(void) shmdt(strlens);
+	(void) shmctl(shmid, IPC_RMID, 0);
 }
 
 int update_existing_git_pkg_base(const char* pkg_base) {
