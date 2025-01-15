@@ -14,6 +14,11 @@ typedef struct {
 
 extern pacman_names_vers_t PACMAN_PKGS_NULL_RET;
 
+/**
+ * pacman_output is only mutated if pacman_objs_out is not NULL.
+ */
+size_t process_pacman_output(pacman_name_ver_t* __restrict__ pacman_objs_out, size_t pacman_objs_size, char* pacman_output, size_t pacman_output_len);
+
 pacman_names_vers_t get_installed_non_pacman();
 void clean_up_pacman_output(void);
 

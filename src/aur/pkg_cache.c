@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "../unistd_helper.h"
+#include "pkg_cache.h"
 
 char* pkg_cache_folder = "__pkg_cache__";
 int   pkg_cache_folder_len = 13;

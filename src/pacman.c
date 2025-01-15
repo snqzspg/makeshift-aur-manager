@@ -67,7 +67,7 @@ static char* record_pacman_output(int in_fd, size_t* __restrict__ n_chars_record
 /**
  * pacman_output is only mutated if pacman_objs_out is not NULL.
  */
-static size_t process_pacman_output(pacman_name_ver_t* __restrict__ pacman_objs_out, size_t pacman_objs_size, char* pacman_output, size_t pacman_output_len) {
+size_t process_pacman_output(pacman_name_ver_t* __restrict__ pacman_objs_out, size_t pacman_objs_size, char* pacman_output, size_t pacman_output_len) {
 	char delim[] = "\n";
 
 	size_t n_tokens = 0;

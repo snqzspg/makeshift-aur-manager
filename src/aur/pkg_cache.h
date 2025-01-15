@@ -1,6 +1,8 @@
 #ifndef PKG_CACHE_H_INCLUDED
 #define PKG_CACHE_H_INCLUDED
 
+int create_pkg_cache();
+
 int fetch_pkg_base(const char* pkg_base);
 
 char is_pwd_git_repo();
