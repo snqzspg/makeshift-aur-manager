@@ -92,7 +92,13 @@ enum __aur_fetch_mode {
 	GIT
 };
 
-void aur_fetch_non_git_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type) {
+enum __aur_action {
+	FETCH,
+	BUILD,
+	INSTALL
+};
+
+void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type, enum __aur_action action) {
 	size_t pkg_count = 0;
 	for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
 		if (ignore_list != NULL && j < ignore_list_len) {
@@ -127,8 +133,20 @@ void aur_fetch_non_git_updates(char **pkg_namelist, size_t pkg_namelist_len, has
 			continue;
 		}
 
-		(void) fetch_pkg_base(found_node -> package_base == NULL ? pkg_namelist[i] : found_node -> package_base);
+		char* pkgbase = found_node -> package_base == NULL ? pkg_namelist[i] : found_node -> package_base;
+
+		(void) fetch_pkg_base(pkgbase);
 		pkg_count++;
+
+		size_t pkg_path_len = write_pkg_file_path(NULL, 0, pkg_namelist[i], pkgbase, 0);
+		if (pkg_path_len == 0) {
+			continue;
+		}
+		char pkg_path[pkg_path_len + 1];
+
+		(void) write_pkg_file_path(pkg_path, pkg_path_len + 1, pkg_namelist[i], pkgbase, 0);
+
+		(void) fprintf(stderr, "[DEBUG] \033[1;32mThis package would be at %s.\033[0m ---\n", pkg_path);
 	}
 
 	if (fetch_type == GIT) {
@@ -341,9 +359,9 @@ int main(int argc, char** argv) {
 					}
 
 					qsort(excludes, n_excludes, sizeof(char*), pkg_name_cmp);
-					aur_fetch_non_git_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excludes, n_excludes, fetch_mode);
+					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excludes, n_excludes, fetch_mode, FETCH);
 				} else {
-					aur_fetch_non_git_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, NULL, 0, fetch_mode);
+					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, NULL, 0, fetch_mode, FETCH);
 				}
 				clean_up_pacman_output();
 				return 0;
