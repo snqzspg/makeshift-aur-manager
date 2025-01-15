@@ -55,6 +55,17 @@ static char* __update_info_from_json(char* mutable_json_str, enum __update_type*
 		return prop_value;
 	}
 
+	if (strcmp(prop_name, "PackageBase") == 0) {
+		// Mutate the string
+		mutable_json_str[prop_tok[1].end] = '\0';
+		char* prop_value = mutable_json_str + prop_tok[1].start;
+
+		*update_type_out = BASE_PKG;
+
+		mutable_json_str[prop_tok -> end] = tmp_char;
+		return prop_value;
+	}
+
 	mutable_json_str[prop_tok -> end] = tmp_char;
 	return NULL;
 }
