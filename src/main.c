@@ -217,13 +217,6 @@ int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_
 		setvbuf(stdout, NULL, _IONBF, 0);
 
 		perform_updates_summary_report(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
-		// aur_check_non_git(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
-		// (void) write(STDOUT_FILENO, "\n", 1);
-		// aur_check_non_git_downgrades(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
-		// (void) write(STDOUT_FILENO, "\n", 1);
-		// aur_list_git(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
-		// (void) write(STDOUT_FILENO, "\n--- \033[1;34mPacman Updates\033[0m ---\n", 35);
-		// (void) perform_pacman_checkupdates();
 
 		run_syscall_print_err_w_ret(close(less_pipe_fds[1]), -1, __FILE__, __LINE__);
 
