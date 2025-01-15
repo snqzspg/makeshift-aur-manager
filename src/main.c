@@ -62,7 +62,13 @@ void aur_check_non_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 	}
 }
 
-void aur_fetch_non_git_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len) {
+enum __aur_fetch_mode {
+	NON_GIT_UPGRADES,
+	NON_GIT_DOWNGRADES,
+	GIT
+};
+
+void aur_fetch_non_git_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type) {
 	for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
 		if (ignore_list != NULL && j < ignore_list_len) {
 			int c = strcmp(pkg_namelist[i], ignore_list[j]);
@@ -76,7 +82,23 @@ void aur_fetch_non_git_updates(char **pkg_namelist, size_t pkg_namelist_len, has
 		}
 		struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkg_namelist[i]);
 
-		if (found_node -> is_non_aur || found_node -> is_git_package || found_node -> update_type != UPGRADE) {
+		if (found_node -> is_non_aur) {
+			continue;
+		}
+
+		if (fetch_type == GIT && !found_node -> is_git_package) {
+			continue;
+		}
+
+		if (fetch_type != GIT && found_node -> is_git_package) {
+			continue;
+		}
+
+		if (fetch_type == NON_GIT_UPGRADES && found_node -> update_type != UPGRADE) {
+			continue;
+		}
+
+		if (fetch_type == NON_GIT_DOWNGRADES && found_node -> update_type != DOWNGRADE) {
 			continue;
 		}
 
@@ -177,6 +199,27 @@ int main(int argc, char** argv) {
 		if (strcmp(argv[1], "pacman-upgrade") == 0) {
 			return perform_pacman_upgrade(argc - 2, argv + 2);
 		}
+		if (strcmp(argv[1], "aur-fetchupdates") == 0 || strcmp(argv[1], "aur-fetchdowngrades") == 0 || strcmp(argv[1], "aur-fetchgit") == 0) {
+			// Checking argument validity before performing actual update fetching.
+			// This will exit the program immediately.
+			if (argc - 2 > 0) {
+				for (int i = 2, j = 0; i < argc; i += 2, j++) {
+					if (strcmp(argv[i], "--exclude") != 0) {
+						(void) fprintf(stderr, "[ERROR][aur-fetchupdates] Unrecognized option. Currently only supports --exclude.\n");
+						return 1;
+					}
+
+					if (i + 1 >= argc) {
+						(void) fprintf(stderr, "[ERROR][aur-fetchupdates] Missing operand for --exclude.\n");
+						return 1;
+					}
+				}
+			}
+		} else {
+			(void) fprintf(stderr, "[ERROR] Unknown option supplied.\n");
+			print_usage(argv[0]);
+			return EXIT_FAILURE;
+		}
 	}
 
 	pacman_names_vers_t installed_pkgs = get_installed_non_pacman();
@@ -206,31 +249,23 @@ int main(int argc, char** argv) {
 		process_response_json(mutable_res_json, &installed_pkgs_dict);
 
 		if (argc > 1) {
-			if (strcmp(argv[1], "aur-fetchupdates") == 0) {
+			int is_fetch_updates_selected = strcmp(argv[1], "aur-fetchupdates") == 0;
+			int is_fetch_downgrades_selected = strcmp(argv[1], "aur-fetchdowngrades") == 0;
+			int is_fetch_git_selected = strcmp(argv[1], "aur-fetchgit") == 0;
+			if (is_fetch_updates_selected || is_fetch_downgrades_selected || is_fetch_git_selected) {
+				enum __aur_fetch_mode fetch_mode = is_fetch_git_selected ? GIT : (is_fetch_downgrades_selected ? NON_GIT_DOWNGRADES : NON_GIT_UPGRADES);
 				if (argc - 2 > 0) {
 					int n_excludes = (argc - 2) / 2 + (((argc - 2) & 1) != 0);
 					char* excludes[n_excludes];
 
 					for (int i = 2, j = 0; i < argc; i += 2, j++) {
-						if (strcmp(argv[i], "--exclude") != 0) {
-							(void) fprintf(stderr, "[ERROR][aur-fetchupdates] Unrecognized option. Currently only supports --exclude.\n");
-							clean_up_pacman_output();
-							return 1;
-						}
-
-						if (i + 1 >= argc) {
-							(void) fprintf(stderr, "[ERROR][aur-fetchupdates] Missing operand for --exclude.\n");
-							clean_up_pacman_output();
-							return 1;
-						}
-
 						excludes[j] = argv[i + 1];
 					}
 
 					qsort(excludes, n_excludes, sizeof(char*), pkg_name_cmp);
-					aur_fetch_non_git_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excludes, n_excludes);
+					aur_fetch_non_git_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excludes, n_excludes, fetch_mode);
 				} else {
-					aur_fetch_non_git_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, NULL, 0);
+					aur_fetch_non_git_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, NULL, 0, fetch_mode);
 				}
 				clean_up_pacman_output();
 				return 0;
