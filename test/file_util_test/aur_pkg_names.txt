@@ -1,0 +1,1 @@
+../str_list/aur_pkg_names.txt
