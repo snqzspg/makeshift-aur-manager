@@ -21,6 +21,8 @@ void build_aur_pkgs(char** pkg_bases, size_t n_pkg_bases);
 char* extract_existing_pkg_base_ver(const char* pkg_base, char quiet);
 void clean_up_extract_existing_pkg_base_ver();
 
+void extract_ver_from_pkgs_muti_proc(char** __restrict__ s_out, size_t* __restrict__ slens_out, const char* pkg_bases[], size_t n_items);
+
 int update_existing_git_pkg_base(const char* pkg_base);
 
 #endif // PKG_CACHE_H_INCLUDED

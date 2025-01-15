@@ -572,6 +572,9 @@ void extract_ver_from_pkgs_muti_proc(char** __restrict__ s_out, size_t* __restri
 			assert(r == slens_out[i]);
 			run_syscall_print_err(close(mp_extr_fd_matrix[i][0]), __FILE__, __LINE__);
 		}
+
+		free(mp_extr_fd_matrix);
+		mp_extr_fd_matrix = NULL;
 		return;
 	}
 
@@ -598,13 +601,13 @@ void extract_ver_from_pkgs_muti_proc(char** __restrict__ s_out, size_t* __restri
 		}
 	}
 
-	size_t total_str_len = 0;
+	// size_t total_str_len = 0;
 	for (size_t i = 0; i < n_items; i++) {
 		int stat;
 		(void) waitpid(child_ids[i], &stat, 0);
 		
 		if (WEXITSTATUS(stat) != 0) {
-			(void) fprintf(stderr, "[WARNING][extract_proc_%d][SUBPROCESS_ERROR] %s\n", i, strerror(WEXITSTATUS(stat)));
+			(void) fprintf(stderr, "[WARNING][extract_proc_%zu][SUBPROCESS_ERROR] %s\n", i, strerror(WEXITSTATUS(stat)));
 		}
 
 		if (slens_out != NULL) {
