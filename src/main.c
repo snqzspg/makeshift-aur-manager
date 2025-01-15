@@ -216,7 +216,7 @@ void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 
 			(void) write_pkg_file_path(pkg_path, pkg_path_len + 1, filtered_list[i].name, pkgbase, 0);
 
-			(void) fprintf(stderr, "[DEBUG] \033[1;32mThis package would be at %s.\033[0m ---\n", pkg_path);
+			(void) fprintf(stderr, "[DEBUG] This package would be at \033[1;33m%s\033[0m.\n", pkg_path);
 		}
 	}
 
