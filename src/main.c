@@ -204,6 +204,7 @@ void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 	}
 
 	if (action == INSTALL) {
+		// (void) fprintf(stderr, "[INFO] Use the command \033[1;32msudo pacman -U ");
 		for (size_t i = 0; i < pkg_count; i++) {
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, filtered_list[i].name);
 			char* pkgbase = found_node -> package_base == NULL ? filtered_list[i].name : found_node -> package_base;
@@ -216,8 +217,10 @@ void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 
 			(void) write_pkg_file_path(pkg_path, pkg_path_len + 1, filtered_list[i].name, pkgbase, 0);
 
+			// (void) fprintf(stderr, "'%s' ", pkg_path);
 			(void) fprintf(stderr, "[DEBUG] This package would be at \033[1;33m%s\033[0m.\n", pkg_path);
 		}
+		// (void) fprintf(stderr, "to install.\033[0m\n");
 	}
 
 	// for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
