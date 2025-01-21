@@ -10,6 +10,7 @@
 #include "file_utils.h"
 #include "pacman.h"
 #include "hashtable.h"
+#include "subprocess_unix.h"
 #include "unistd_helper.h"
 
 #include "aur/pkgver_cache.h"
@@ -228,11 +229,13 @@ void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 		for (size_t i = 0; i < pkg_count + 3; i++) {
 			(void) fprintf(stderr, "%s ", pacman_args[i]);
 		}
+		(void) fprintf(stderr, "\033[0mto install.\n");
+
+		(void) run_subprocess_v(NULL, "/usr/bin/sudo", (const char**) pacman_args, NULL, 0, 1);
 
 		for (size_t i = 3; i < pkg_count + 3; i++) {
 			free(pacman_args[i]);
 		}
-		(void) fprintf(stderr, "\033[0mto install.\n");
 	}
 }
 
