@@ -100,7 +100,7 @@ enum __aur_action {
 	INSTALL
 };
 
-size_t filter_pkg_list(pacman_name_ver_t* __restrict__ filtered_list_out, size_t filtered_list_limit, char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type) {
+size_t filter_pkg_updates(pacman_name_ver_t* __restrict__ filtered_list_out, size_t filtered_list_limit, char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type) {
 	size_t pkg_count = 0;
 	for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
 		if (ignore_list != NULL && j < ignore_list_len) {
@@ -148,11 +148,11 @@ size_t filter_pkg_list(pacman_name_ver_t* __restrict__ filtered_list_out, size_t
 }
 
 void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type, enum __aur_action action) {
-	size_t pkg_count = filter_pkg_list(NULL, 0, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
+	size_t pkg_count = filter_pkg_updates(NULL, 0, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
 
 	pacman_name_ver_t filtered_list[pkg_count];
 
-	(void) filter_pkg_list(filtered_list, pkg_count, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
+	(void) filter_pkg_updates(filtered_list, pkg_count, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
 
 	char* new_ver_strs[pkg_count];
 
