@@ -1,0 +1,127 @@
+#include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#include "unistd_helper.h"
+
+/**
+ * Runs a subprocess by using UNIX syscalls.
+ * 
+ * @param pwd The directory to change to before running subprocess
+ * @param exec_path The absolute path to the executable
+ * @param args An array of arguments to be supplied, including argv0
+ *             The last item should be NULL
+ * @param stdout_fd An output which the stdout pipe fd will be placed.
+ *                  Read from this to get the stdout string.
+ * @param quiet Set this non-zero to silence execution information
+ * @param wait_exit Set this to non-zero for the function to wait for subprocess to complete.
+ *                  A zero value means the function will return with the subprocess still running.
+ * 
+ * @return An integer: return code of subprocess if wait_exit is true, pid of child if wait_exit
+ *         is false. On error it will give -1. To clean Zombie processes, call UNIX wait for the
+ *         child pid.
+ */
+int run_subprocess_v(const char* pwd, const char* exec_path, char* const args[], int* __restrict__ stdout_fd, char quiet, char wait_exit) {
+	int pipefds[2];
+	if (stdout_fd != NULL) {
+		run_syscall_print_w_act(pipe(pipefds), return -EXIT_FAILURE;, __FILE__, __LINE__);
+	}
+
+	int subprocess = fork();
+
+	if (subprocess < 0) {
+		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		return -EXIT_FAILURE;
+	} else if (subprocess == 0) {
+		if (stdout_fd != NULL) {
+			run_syscall_print_w_act(close(pipefds[0]), close(pipefds[1]); _exit(-EXIT_FAILURE); return -EXIT_FAILURE;, __FILE__, __LINE__);
+			run_syscall_print_w_act(dup2(pipefds[1], STDOUT_FILENO), close(pipefds[1]); _exit(-EXIT_FAILURE); return -EXIT_FAILURE;, __FILE__, __LINE__);
+			run_syscall_print_w_act(close(pipefds[1]), _exit(-EXIT_FAILURE); return -EXIT_FAILURE;, __FILE__, __LINE__);
+		}
+
+		if (pwd != NULL) {
+			if (!quiet)
+				(void) fprintf(stderr, "--- \033[1;32mChanging pwd for %s to %s\033[0m ---\n", args[0], pwd);
+
+			run_syscall_print_w_act(chdir(pwd), return -EXIT_FAILURE;, __FILE__, __LINE__);
+		}
+
+		if (!quiet) {
+			(void) fprintf(stderr, "--- \033[1;32mExecuting %s ", exec_path);
+			for (int i = 1; args[i] != NULL; i++) {
+				(void) fprintf(stderr, "%s ", args[i]);
+			}
+			(void) fprintf(stderr, "\033[0m---\n");
+		}
+
+		if (execv(exec_path, args) < 0) {
+			(void) fprintf(stderr, "[NOTE] \033[1;31m%s execution failed!\033[0m\n", exec_path);
+			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			return -EXIT_FAILURE;
+		}
+
+		_exit(-1);
+		return -EXIT_FAILURE;
+	} else {
+		if (stdout_fd != NULL) {
+			run_syscall_print_w_act(close(pipefds[1]), close(pipefds[0]); _exit(-EXIT_FAILURE); return -EXIT_FAILURE;, __FILE__, __LINE__);
+			*stdout_fd = pipefds[0];
+		}
+
+		if (!wait_exit) {
+			return subprocess;
+		}
+		int proc_stat;
+		run_syscall_print_w_act(waitpid(subprocess, &proc_stat, 0), return -EXIT_FAILURE;, __FILE__, __LINE__);
+	}
+
+	return WEXITSTATUS(wait_exit);
+}
+
+/**
+ * Runs a subprocess by using UNIX syscalls.
+ * 
+ * @param pwd The directory to change to before running subprocess
+ * @param quiet Set this non-zero to silence execution information
+ * @param wait_exit Set this to non-zero for the function to wait for subprocess to complete.
+ *                  A zero value means the function will return with the subprocess still running.
+ * @param stdout_fd An output which the stdout pipe fd will be placed.
+ *                  Read from this to get the stdout string.
+ * @param exec_path The absolute path to the executable
+ * @param arg An array of arguments to be supplied, including argv0. The last argument should be NULL.
+ * 
+ * @return An integer: return code of subprocess if wait_exit is true, pid of child if wait_exit
+ *         is false. On error it will give -1. To clean Zombie processes, call UNIX wait for the
+ *         child pid.
+ */
+int run_subprocess(const char* pwd, char quiet, char wait_exit, int* __restrict__ stdout_fd, const char* exec_path, char* arg, ...) {
+	va_list args;
+	va_list args1;
+	va_start(args, arg);
+
+	va_copy(args1, args);
+
+	int count = 0;
+	for (char* i = va_arg(args, char*); i != NULL; i = va_arg(args, char*)) {
+		count++;
+	}
+
+	char* cmd_args[count + 2];
+
+	cmd_args[0] = arg;
+
+	for (int i = 1; i < count + 1; i++) {
+		cmd_args[i] = va_arg(args1, char*);
+	}
+
+	cmd_args[count + 1] = NULL;
+
+	va_end(args);
+	va_end(args1);
+
+	return run_subprocess_v(pwd, exec_path, cmd_args, stdout_fd, quiet, wait_exit);
+}
