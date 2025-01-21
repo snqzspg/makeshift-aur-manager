@@ -204,125 +204,36 @@ void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 	}
 
 	if (action == INSTALL) {
-		// (void) fprintf(stderr, "[INFO] Use the command \033[1;32msudo pacman -U ");
+        char* pacman_args[pkg_count + 4];
+		pacman_args[0] = "sudo";
+		pacman_args[1] = "pacman";
+		pacman_args[2] = "-U";
+		pacman_args[pkg_count + 3] = NULL;
+
 		for (size_t i = 0; i < pkg_count; i++) {
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, filtered_list[i].name);
 			char* pkgbase = found_node -> package_base == NULL ? filtered_list[i].name : found_node -> package_base;
 
-			size_t pkg_path_len = write_pkg_file_path(NULL, 0, filtered_list[i].name, pkgbase, 0);
-			if (pkg_path_len == 0) {
+			char* pkg_file = pkg_file_path_stream_alloc(filtered_list[i].name, pkgbase, 0);
+			if (pkg_file == NULL) {
 				continue;
 			}
-			char pkg_path[pkg_path_len + 1];
 
-			(void) write_pkg_file_path(pkg_path, pkg_path_len + 1, filtered_list[i].name, pkgbase, 0);
+			(void) fprintf(stderr, "[DEBUG] This package would be at \033[1;33m%s\033[0m.\n", pkg_file);
 
-			// (void) fprintf(stderr, "'%s' ", pkg_path);
-			(void) fprintf(stderr, "[DEBUG] This package would be at \033[1;33m%s\033[0m.\n", pkg_path);
+			pacman_args[i + 3] = pkg_file;
 		}
-		// (void) fprintf(stderr, "to install.\033[0m\n");
+
+		(void) fprintf(stderr, "[INFO] Use the command \033[1;32m");
+		for (size_t i = 0; i < pkg_count + 3; i++) {
+			(void) fprintf(stderr, "%s ", pacman_args[i]);
+		}
+
+		for (size_t i = 3; i < pkg_count + 3; i++) {
+			free(pacman_args[i]);
+		}
+		(void) fprintf(stderr, "\033[0mto install.\n");
 	}
-
-	// for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
-	// 	if (ignore_list != NULL && j < ignore_list_len) {
-	// 		int c = strcmp(pkg_namelist[i], ignore_list[j]);
-	// 		while (j < ignore_list_len && c > 0) {
-	// 			j++;
-	// 		}
-	// 		if (c == 0) {
-	// 			j++;
-	// 			continue;
-	// 		}
-	// 	}
-	// 	struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkg_namelist[i]);
-
-	// 	if (found_node -> is_non_aur) {
-	// 		continue;
-	// 	}
-
-	// 	if (fetch_type == GIT && !found_node -> is_git_package) {
-	// 		continue;
-	// 	}
-
-	// 	if (fetch_type != GIT && found_node -> is_git_package) {
-	// 		continue;
-	// 	}
-
-	// 	if (fetch_type == NON_GIT_UPGRADES && found_node -> update_type != UPGRADE) {
-	// 		continue;
-	// 	}
-
-	// 	if (fetch_type == NON_GIT_DOWNGRADES && found_node -> update_type != DOWNGRADE) {
-	// 		continue;
-	// 	}
-
-	// 	char* pkgbase = found_node -> package_base == NULL ? pkg_namelist[i] : found_node -> package_base;
-
-	// 	(void) fetch_pkg_base(pkgbase);
-	// 	pkg_count++;
-
-	// 	size_t pkg_path_len = write_pkg_file_path(NULL, 0, pkg_namelist[i], pkgbase, 0);
-	// 	if (pkg_path_len == 0) {
-	// 		continue;
-	// 	}
-	// 	char pkg_path[pkg_path_len + 1];
-
-	// 	(void) write_pkg_file_path(pkg_path, pkg_path_len + 1, pkg_namelist[i], pkgbase, 0);
-
-	// 	(void) fprintf(stderr, "[DEBUG] \033[1;32mThis package would be at %s.\033[0m ---\n", pkg_path);
-	// }
-
-	// if (fetch_type == GIT) {
-	// 	pacman_name_ver_t merge_list[pkg_count];
-	// 	char* new_vers[pkg_count];
-	// 	size_t c = 0;
-
-	// 	for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
-	// 		if (ignore_list != NULL && j < ignore_list_len) {
-	// 			int c = strcmp(pkg_namelist[i], ignore_list[j]);
-	// 			while (j < ignore_list_len && c > 0) {
-	// 				j++;
-	// 			}
-	// 			if (c == 0) {
-	// 				j++;
-	// 				continue;
-	// 			}
-	// 		}
-	// 		struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkg_namelist[i]);
-
-	// 		if (found_node -> is_non_aur) {
-	// 			continue;
-	// 		}
-
-	// 		if (fetch_type == GIT && !found_node -> is_git_package) {
-	// 			continue;
-	// 		}
-
-	// 		update_existing_git_pkg_base(found_node -> package_base);
-
-	// 		merge_list[c].name = pkg_namelist[i];
-	// 		merge_list[c].valid = 1;
-	// 		char* v = extract_existing_pkg_base_ver(found_node -> package_base, 0);
-	// 		if (v == NULL) {
-	// 			v = found_node -> updated_ver;
-	// 			new_vers[c] = NULL;
-	// 		} else {
-	// 			new_vers[c] = (char*) malloc((strlen(v) + 1) * sizeof(char));
-	// 			(void) strncpy(new_vers[c], v, strlen(v) + 1);
-	// 			v = new_vers[c];
-	// 		}
-	// 		merge_list[c].version = v;
-	// 		c++;
-	// 	}
-
-	// 	(void) load_ver_cache();
-	// 	merge_in_ver_cache(merge_list, pkg_count);
-	// 	save_ver_cache();
-	// 	discard_ver_cache();
-	// 	for (size_t i = 0; i < pkg_count; i++) {
-	// 		free(new_vers[i]);
-	// 	}
-	// }
 }
 
 void perform_updates_summary_report(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict) {

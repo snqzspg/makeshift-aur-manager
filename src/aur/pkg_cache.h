@@ -4,6 +4,7 @@
 int create_pkg_cache();
 
 size_t write_pkg_file_path(char* __restrict__ dest, size_t limit, const char* pkg_name, const char* pkg_base, char quiet);
+char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, char quiet);
 
 int fetch_pkg_base(const char* pkg_base);
 
