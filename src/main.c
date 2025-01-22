@@ -257,7 +257,7 @@ int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_
 	}
 	int less_pipe_fds[2];
 
-	run_syscall_print_err_w_ret(pipe(less_pipe_fds), -1, __FILE__, __LINE__);
+	run_syscall_print_w_act(pipe(less_pipe_fds), return -1;, "ERROR", __FILE__, __LINE__);
 
 	int aur_upd_child = fork();
 
@@ -267,45 +267,49 @@ int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_
 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return -1;
 	} else if (aur_upd_child == 0) {
-		run_syscall_print_err_w_ret(close(less_pipe_fds[0]), -1, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(dup2(less_pipe_fds[1], STDOUT_FILENO), -1, __FILE__, __LINE__);
+		run_syscall_print_w_act(close(less_pipe_fds[0]), ;, "WARNING", __FILE__, __LINE__);
+		run_syscall_print_w_act(dup2(less_pipe_fds[1], STDOUT_FILENO), (void) close(less_pipe_fds[1]); return -1;, "ERROR", __FILE__, __LINE__);
 		setvbuf(stdout, NULL, _IONBF, 0);
 
 		perform_updates_summary_report(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
 
-		run_syscall_print_err_w_ret(close(less_pipe_fds[1]), -1, __FILE__, __LINE__);
+		run_syscall_print_w_act(close(less_pipe_fds[1]), ;, "WARNING", __FILE__, __LINE__);
 
 		_exit(0);
 		return 0;
 	} else {
-		run_syscall_print_err_w_ret(close(less_pipe_fds[1]), -1, __FILE__, __LINE__);
+		run_syscall_print_w_act(close(less_pipe_fds[1]), ;, "WARNING", __FILE__, __LINE__);
 
 		(void) waitpid(aur_upd_child, NULL, 0);
 
-		int less_child = fork();
+		(void) run_subprocess(NULL, 1, 1, NULL, less_pipe_fds[0], NULL, "/usr/bin/less", "less", "-F", NULL);
 
-		if (less_child == -1) {
-			(void) close(less_pipe_fds[0]);
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
-			return -1;
-		} else if (less_child == 0) {
-			run_syscall_print_err_w_ret(dup2(less_pipe_fds[0], STDIN_FILENO), -1, __FILE__, __LINE__);
-			run_syscall_print_err_w_ret(close(less_pipe_fds[0]), -1, __FILE__, __LINE__);
+		return 0;
 
-			if (execl("/usr/bin/less", "less", "-F", NULL) < 0) {
-				(void) fprintf(stderr, "[NOTE] /usr/bin/less \033[1;31mexecution failed!\033[0m\n");
-				(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
-				return -1;
-			}
+		// int less_child = fork();
 
-			return -1;
-		} else {
-			run_syscall_print_err_w_ret(close(less_pipe_fds[0]), -1, __FILE__, __LINE__);
+		// if (less_child == -1) {
+		// 	(void) close(less_pipe_fds[0]);
+		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		// 	return -1;
+		// } else if (less_child == 0) {
+		// 	run_syscall_print_err_w_ret(dup2(less_pipe_fds[0], STDIN_FILENO), -1, __FILE__, __LINE__);
+		// 	run_syscall_print_err_w_ret(close(less_pipe_fds[0]), -1, __FILE__, __LINE__);
 
-			(void) waitpid(less_child, NULL, 0);
+		// 	if (execl("/usr/bin/less", "less", "-F", NULL) < 0) {
+		// 		(void) fprintf(stderr, "[NOTE] /usr/bin/less \033[1;31mexecution failed!\033[0m\n");
+		// 		(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+		// 		return -1;
+		// 	}
 
-			return 0;
-		}
+		// 	return -1;
+		// } else {
+		// 	run_syscall_print_err_w_ret(close(less_pipe_fds[0]), -1, __FILE__, __LINE__);
+
+		// 	(void) waitpid(less_child, NULL, 0);
+
+		// 	return 0;
+		// }
 	}
 }
 
