@@ -231,7 +231,7 @@ void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 		}
 		(void) fprintf(stderr, "\033[0mto install.\n");
 
-		(void) run_subprocess_v(NULL, "/usr/bin/sudo", (const char**) pacman_args, NULL, 0, 1);
+		(void) run_subprocess_v(NULL, "/usr/bin/sudo", (char**) pacman_args, NULL, STDIN_FILENO, NULL, 0, 1);
 
 		for (size_t i = 3; i < pkg_count + 3; i++) {
 			free(pacman_args[i]);

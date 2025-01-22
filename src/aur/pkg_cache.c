@@ -169,7 +169,7 @@ char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, cha
 	
 	int output_fds[2];
 
-	run_syscall_print_w_act(pipe(output_fds), return NULL;, __FILE__, __LINE__);
+	run_syscall_print_w_act(pipe(output_fds), return NULL;, "ERROR", __FILE__, __LINE__);
 
 	int makepkg_subprocess = fork();
 
@@ -177,14 +177,14 @@ char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, cha
 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return NULL;
 	} else if (makepkg_subprocess == 0) {
-		run_syscall_print_w_act(close(output_fds[0]), close(output_fds[1]); return NULL;, __FILE__, __LINE__);
-		run_syscall_print_w_act(dup2(output_fds[1], STDOUT_FILENO), close(output_fds[1]); return NULL;, __FILE__, __LINE__);
-		run_syscall_print_w_act(close(output_fds[1]), return NULL;, __FILE__, __LINE__);
+		run_syscall_print_w_act(close(output_fds[0]), close(output_fds[1]); return NULL;, "ERROR", __FILE__, __LINE__);
+		run_syscall_print_w_act(dup2(output_fds[1], STDOUT_FILENO), close(output_fds[1]); return NULL;, "ERROR", __FILE__, __LINE__);
+		run_syscall_print_w_act(close(output_fds[1]), return NULL;, "ERROR", __FILE__, __LINE__);
 
 		if (!quiet)
 			(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", pkgbase_path);
 
-		run_syscall_print_w_act(chdir(pkgbase_path), return NULL;, __FILE__, __LINE__);
+		run_syscall_print_w_act(chdir(pkgbase_path), return NULL;, "ERROR", __FILE__, __LINE__);
 
 		if (!quiet)
 			(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg --packagelist\033[0m ---\n");
@@ -198,10 +198,10 @@ char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, cha
 		_exit(-1);
 		return NULL;
 	} else {
-		run_syscall_print_w_act(close(output_fds[1]), close(output_fds[0]); return NULL;, __FILE__, __LINE__);
+		run_syscall_print_w_act(close(output_fds[1]), close(output_fds[0]); return NULL;, "ERROR", __FILE__, __LINE__);
 
 		int makepkg_stat;
-		run_syscall_print_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), close(output_fds[0]); return NULL;, __FILE__, __LINE__);
+		run_syscall_print_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), close(output_fds[0]); return NULL;, "ERROR", __FILE__, __LINE__);
 
 		if (WEXITSTATUS(makepkg_stat) != 0) {
 			(void) fprintf(stderr, "[WARNING] makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
