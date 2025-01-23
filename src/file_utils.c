@@ -60,6 +60,7 @@ streamed_content_t stream_fd_content_alloc(int fd) {
 		free(content);
 		return STR_CT_NULL_RET;
 	}
+	content_size++;
 	content = (char *) realloc(content, content_size * sizeof(char));
 	if (content == NULL) {
 		perror("[ERROR][stream_fd_content_alloc]");

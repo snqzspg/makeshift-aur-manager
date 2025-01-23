@@ -683,11 +683,13 @@ char* extract_existing_pkg_base_ver(const char* pkg_base, char quiet) {
 	char* found_loc = strstr(streamed_output.content, needle);
 	if (found_loc == NULL) {
 		(void) fprintf(stderr, "--- \033[1;31mCould not produce pkgver.\033[0m ---\n");
+		stream_fd_content_dealloc(&streamed_output);
 		return NULL;
 	}
 	char* end_loc = strchr(found_loc, '\n');
 	if (end_loc == NULL) {
 		(void) fprintf(stderr, "--- \033[1;31mString doesn't end with newline?\033[0m ---\n");
+		stream_fd_content_dealloc(&streamed_output);
 		return NULL;
 	}
 
@@ -739,10 +741,13 @@ char* extract_existing_pkg_base_ver(const char* pkg_base, char quiet) {
 	}
 	if (extract_existing_ver_ret == NULL) {
 		perror("[ERROR][extract_existing_pkg_base_ver]");
+		stream_fd_content_dealloc(&streamed_output);
 		return NULL;
 	}
 
 	(void) snprintf(extract_existing_ver_ret, ver_s_len + 1, "%s%s%s%s%s", epoch, epoch_len == 0 ? "" : ":", pkgver, pkgrel_len == 0 ? "" : "-", pkgrel);
+
+	stream_fd_content_dealloc(&streamed_output);
 
 	return extract_existing_ver_ret;
 }

@@ -86,6 +86,8 @@ const char* get_packages_info(const char* const* packages, size_t n_packages) {
 		return NULL;
 	}
 
+	curl_easy_cleanup(curl);
+
 	return pkg_info_response.response;
 }
 
