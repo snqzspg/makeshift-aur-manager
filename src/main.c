@@ -285,31 +285,6 @@ int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_
 		(void) run_subprocess(NULL, 1, 1, NULL, less_pipe_fds[0], NULL, "/usr/bin/less", "less", "-F", NULL);
 
 		return 0;
-
-		// int less_child = fork();
-
-		// if (less_child == -1) {
-		// 	(void) close(less_pipe_fds[0]);
-		// 	(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
-		// 	return -1;
-		// } else if (less_child == 0) {
-		// 	run_syscall_print_err_w_ret(dup2(less_pipe_fds[0], STDIN_FILENO), -1, __FILE__, __LINE__);
-		// 	run_syscall_print_err_w_ret(close(less_pipe_fds[0]), -1, __FILE__, __LINE__);
-
-		// 	if (execl("/usr/bin/less", "less", "-F", NULL) < 0) {
-		// 		(void) fprintf(stderr, "[NOTE] /usr/bin/less \033[1;31mexecution failed!\033[0m\n");
-		// 		(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
-		// 		return -1;
-		// 	}
-
-		// 	return -1;
-		// } else {
-		// 	run_syscall_print_err_w_ret(close(less_pipe_fds[0]), -1, __FILE__, __LINE__);
-
-		// 	(void) waitpid(less_child, NULL, 0);
-
-		// 	return 0;
-		// }
 	}
 }
 
