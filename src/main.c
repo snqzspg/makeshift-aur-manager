@@ -7,6 +7,7 @@
 
 #include "aur.h"
 #include "aur/pkg_cache.h"
+#include "aur/pkg_install_stages.h"
 #include "file_utils.h"
 #include "pacman.h"
 #include "hashtable.h"
@@ -87,19 +88,19 @@ void aur_check_non_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 	}
 }
 
-enum __aur_fetch_mode {
-	NON_GIT_UPGRADES,
-	NON_GIT_DOWNGRADES,
-	GIT
-};
+// enum __aur_fetch_mode {
+// 	NON_GIT_UPGRADES,
+// 	NON_GIT_DOWNGRADES,
+// 	GIT
+// };
 
-enum __aur_action {
-	FETCH,
-	TRUST,
-	PATCH,
-	BUILD,
-	INSTALL
-};
+// enum __aur_action {
+// 	FETCH,
+// 	TRUST,
+// 	PATCH,
+// 	BUILD,
+// 	INSTALL
+// };
 
 size_t filter_pkg_updates(pacman_name_ver_t* __restrict__ filtered_list_out, size_t filtered_list_limit, char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type) {
 	size_t pkg_count = 0;
@@ -339,6 +340,12 @@ int main(int argc, char** argv) {
 					}
 				}
 			}
+		} else if (
+			strcmp(argv[1], "aur-fetch") == 0 || 
+			strcmp(argv[1], "aur-build") == 0 || 
+			strcmp(argv[1], "aur-install") == 0
+		) {
+			return pkg_list_manage_subseq(argv[1], argc - 2, argv + 2);
 		} else {
 			(void) fprintf(stderr, "[ERROR] Unknown option supplied.\n");
 			print_usage(argv[0]);

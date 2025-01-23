@@ -107,8 +107,12 @@ jsmntok_t* find_and_update_pkg_info(char* mutable_json_str, hashtable_t* map, js
 	node -> is_non_aur   = 0;
 	node -> package_base = base_pkg;
 
-	int vercmp = compare_versions(node -> installed_ver, node -> updated_ver);
-	node -> update_type = vercmp == 0 ? UP_TO_DATE : (vercmp < 0 ? UPGRADE : DOWNGRADE);
+	if (node -> installed_ver == NULL) {
+		node -> update_type = UPGRADE;
+	} else {
+		int vercmp = compare_versions(node -> installed_ver, node -> updated_ver);
+		node -> update_type = vercmp == 0 ? UP_TO_DATE : (vercmp < 0 ? UPGRADE : DOWNGRADE);
+	}
 
 	return i;
 }

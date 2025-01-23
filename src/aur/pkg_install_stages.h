@@ -15,4 +15,6 @@ enum __aur_action {
 	INSTALL
 };
 
+int pkg_list_manage_subseq(const char* aur_cmd, int argc, char** argv);
+
 #endif // PKG_INSTALL_STSGES_H_INCLUDED
