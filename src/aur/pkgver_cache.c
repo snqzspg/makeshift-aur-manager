@@ -58,7 +58,7 @@ pacman_names_vers_t* load_ver_cache() {
         return &ver_cache_loaded;
     }
 
-    ver_cache_loaded.n_items = process_pacman_output(ver_cache_loaded.pkg_names_vers, ver_cache_loaded.n_items, ver_cache_fdstream.content, ver_cache_fdstream.len);
+    ver_cache_loaded.n_items = process_pacman_output(ver_cache_loaded.pkg_names_vers, ver_cache_loaded.n_items, ver_cache_fdstream.content, ver_cache_fdstream.len + 1);
 
     return &ver_cache_loaded;
 }

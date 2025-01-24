@@ -69,7 +69,7 @@ streamed_content_t stream_fd_content_alloc(int fd) {
 
 	return (streamed_content_t) {
 		.content = content,
-		.len     = content_size
+		.len     = content_size - 1
 	};
 }
 
