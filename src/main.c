@@ -63,17 +63,18 @@ int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_
 }
 
 void print_usage(const char* arg0) {
-	(void) fprintf(stderr, "usage: %s\n",      arg0);
-	(void) fprintf(stderr, "       %s help\n", arg0);
-	(void) fprintf(stderr, "       %s pacman-checkupdates\n", arg0);
-	(void) fprintf(stderr, "       %s pacman-upgrade\n", arg0);
-	(void) fprintf(stderr, "       %s aur-checkupdates\n", arg0);
-	(void) fprintf(stderr, "       %s aur-fetchupdates\n", arg0);
-	(void) fprintf(stderr, "       %s aur-buildupdates\n", arg0);
-	(void) fprintf(stderr, "       %s aur-upgrade\n", arg0);
-	(void) fprintf(stderr, "       %s aur-fetchgit\n", arg0);
-	(void) fprintf(stderr, "       %s aur-buildgit\n", arg0);
-	(void) fprintf(stderr, "       %s aur-upgradegit\n", arg0);
+	(void) fprintf(stderr, "usage: %s command [command_items]\n\n", arg0);
+	(void) fprintf(stderr, "The following are the list of available commands:\n");
+	(void) fprintf(stderr, "    help - Displays this help page and exit.\n");
+	(void) fprintf(stderr, "    pacman-checkupdates - List pacman updates available by running checkupdates.\n");
+	(void) fprintf(stderr, "    pacman-upgrade      - Performs a full system upgrade using sudo pacman -Syu.\n");
+	(void) fprintf(stderr, "    aur-checkupdates    - [WIP] Lists available updates for AUR packages, excluding those ending with '-git'.\n");
+	(void) fprintf(stderr, "    aur-fetchupdates    - Performs git clone to updates for AUR packages, excluding those ending with '-git'.\n");
+	(void) fprintf(stderr, "    aur-buildupdates    - Performs makepkg -s to updates for AUR packages, excluding those ending with '-git'.\n");
+	(void) fprintf(stderr, "    aur-upgrade         - Uses pacman to upgrade AUR packages, excluding those ending with '-git'.\n");
+	(void) fprintf(stderr, "    aur-fetchgit        - Performs git clone to updates for AUR packages that ends with '-git'.\n");
+	(void) fprintf(stderr, "    aur-buildgit        - Performs makepkg -s to updates for AUR packages that ends with '-git'.\n");
+	(void) fprintf(stderr, "    aur-upgradegit      - Uses pacman to updates for AUR packages that ends with '-git'.\n");
 }
 
 int main(int argc, char** argv) {
