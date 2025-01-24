@@ -318,14 +318,14 @@ int main(int argc, char** argv) {
 			return perform_pacman_upgrade(argc - 2, argv + 2);
 		}
 		if (
-			strcmp(argv[1], "aur-fetchupdates") == 0 ||
+			strcmp(argv[1], "aur-fetchupdates")    == 0 ||
 			strcmp(argv[1], "aur-fetchdowngrades") == 0 ||
-			strcmp(argv[1], "aur-fetchgit") == 0 ||
-			strcmp(argv[1], "aur-buildupdates") == 0 ||
+			strcmp(argv[1], "aur-fetchgit")        == 0 ||
+			strcmp(argv[1], "aur-buildupdates")    == 0 ||
 			strcmp(argv[1], "aur-builddowngrades") == 0 ||
-			strcmp(argv[1], "aur-buildgit") == 0 ||
-			strcmp(argv[1], "aur-upgrade") == 0 ||
-			strcmp(argv[1], "aur-upgradegit") == 0
+			strcmp(argv[1], "aur-buildgit")        == 0 ||
+			strcmp(argv[1], "aur-upgrade")         == 0 ||
+			strcmp(argv[1], "aur-upgradegit")      == 0
 		) {
 			// Checking argument validity before performing actual update fetching.
 			// This will exit the program immediately.
@@ -382,23 +382,23 @@ int main(int argc, char** argv) {
 		process_response_json(mutable_res_json, &installed_pkgs_dict);
 
 		if (argc > 1) {
-			char is_fetch_updates_selected = strcmp(argv[1], "aur-fetchupdates") == 0;
+			char is_fetch_updates_selected    = strcmp(argv[1], "aur-fetchupdates")    == 0;
 			char is_fetch_downgrades_selected = strcmp(argv[1], "aur-fetchdowngrades") == 0;
-			char is_fetch_git_selected = strcmp(argv[1], "aur-fetchgit") == 0;
-			char is_build_updates_selected    = strcmp(argv[1], "aur-buildupdates") == 0;
+			char is_fetch_git_selected        = strcmp(argv[1], "aur-fetchgit")        == 0;
+			char is_build_updates_selected    = strcmp(argv[1], "aur-buildupdates")    == 0;
 			char is_build_downgrades_selected = strcmp(argv[1], "aur-builddowngrades") == 0;
-			char is_build_git_selected        = strcmp(argv[1], "aur-buildgit") == 0;
-			char is_upgrade_selected          = strcmp(argv[1], "aur-upgrade") == 0;
-			char is_upgrade_git_selected      = strcmp(argv[1], "aur-upgradegit") == 0;
+			char is_build_git_selected        = strcmp(argv[1], "aur-buildgit")        == 0;
+			char is_upgrade_selected          = strcmp(argv[1], "aur-upgrade")         == 0;
+			char is_upgrade_git_selected      = strcmp(argv[1], "aur-upgradegit")      == 0;
 
 			if (
-				is_fetch_updates_selected ||
+				is_fetch_updates_selected    ||
 				is_fetch_downgrades_selected ||
-				is_fetch_git_selected ||
+				is_fetch_git_selected        ||
 				is_build_downgrades_selected ||
-				is_build_git_selected ||
-				is_build_updates_selected ||
-				is_upgrade_selected ||
+				is_build_git_selected        ||
+				is_build_updates_selected    ||
+				is_upgrade_selected          ||
 				is_upgrade_git_selected
 			) {
 				enum __aur_fetch_mode fetch_mode = NON_GIT_UPGRADES;
