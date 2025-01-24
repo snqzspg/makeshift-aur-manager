@@ -68,7 +68,7 @@ size_t filter_pkg_updates(char** __restrict__ filtered_list_out, size_t filtered
 }
 
 void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkgs_dict/* , enum __aur_fetch_mode fetch_type */, enum __aur_action action, char** pacman_opts, int n_pacman_opts) {
-	if (action >= FETCH) {
+	if (action == FETCH) {
 		for (size_t i = 0; i < pkg_count; i++) {
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkgs[i]);
 			char* pkgbase = found_node -> package_base == NULL ? pkgs[i] : found_node -> package_base;
@@ -77,7 +77,7 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 		}
 	}
 
-	if (action >= FETCH /* PATCH */) {
+	if (action == FETCH /* PATCH */) {
 		// if (fetch_type == GIT) {
 			pacman_name_ver_t git_pkgs[pkg_count];
 			char* new_ver_strs[pkg_count];
@@ -117,7 +117,7 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 		// }
 	}
 
-	if (action == BUILD) {
+	if (action >= BUILD) {
 		for (size_t i = 0; i < pkg_count; i++) {
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkgs[i]);
 
@@ -141,6 +141,8 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 			}
 		}
 
+		int pacman_args_count = n_pacman_opts + 3;
+
 		for (size_t i = 0; i < pkg_count; i++) {
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkgs[i]);
 			char* pkgbase = found_node -> package_base == NULL ? pkgs[i] : found_node -> package_base;
@@ -153,21 +155,24 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 			// (void) fprintf(stderr, "[DEBUG] This package would be at \033[1;33m%s\033[0m.\n", pkg_file);
 			(void) debug_printf(" This package would be at \033[1;33m%s\033[0m.\n", pkg_file);
 
-			pacman_args[i + n_pacman_opts + 3] = pkg_file;
+			pacman_args[pacman_args_count++] = pkg_file;
 		}
+
+		pacman_args[pacman_args_count] = NULL;
 
 		// (void) fprintf(stderr, "[INFO] Use the command \033[1;32m");
 		(void) info_printf(" Use the command \033[1;32m");
 		if (is_logging_type_enabled(INFO)) {
-			for (size_t i = 0; i < n_pacman_args; i++) {
+			for (size_t i = 0; i < pacman_args_count; i++) {
 				(void) fprintf(stderr, "%s ", pacman_args[i]);
 			}
 			(void) fprintf(stderr, "\033[0mto install.\n");
 		}
 
-		(void) run_subprocess_v(NULL, "/usr/bin/sudo", (char**) pacman_args, NULL, STDIN_FILENO, NULL, 0, 1);
+		if (pacman_args_count > n_pacman_opts + 3)
+			(void) run_subprocess_v(NULL, "/usr/bin/sudo", (char**) pacman_args, NULL, STDIN_FILENO, NULL, 0, 1);
 
-		for (size_t i = n_pacman_opts + 3; i < n_pacman_args; i++) {
+		for (size_t i = n_pacman_opts + 3; i < pacman_args_count; i++) {
 			free(pacman_args[i]);
 		}
 	}
@@ -259,7 +264,7 @@ void build_aur_pkgs_from_args(int argc, char** argv, hashtable_t pkgs_info) {
 }
 
 void install_aur_pkgs_from_args(int argc, char** argv, hashtable_t pkgs_info, char** pacman_opts, int n_pacman_opts) {
-	aur_perform_action(argv, argc, pkgs_info, BUILD, NULL, 0);
+	// aur_perform_action(argv, argc, pkgs_info, BUILD, NULL, 0);
 	aur_perform_action(argv, argc, pkgs_info, INSTALL, pacman_opts, n_pacman_opts);
 }
 
