@@ -7,13 +7,13 @@
 
 #include "aur.h"
 #include "aur/pkg_cache.h"
-#include "aur/pkg_install_stages.h"
 #include "file_utils.h"
 #include "pacman.h"
 #include "hashtable.h"
 #include "subprocess_unix.h"
 #include "unistd_helper.h"
 
+#include "aur/pkg_install_stages.h"
 #include "aur/pkgver_cache.h"
 #include "aur_pkg_parse.h"
 
@@ -102,52 +102,52 @@ void aur_check_non_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 // 	INSTALL
 // };
 
-size_t filter_pkg_updates(pacman_name_ver_t* __restrict__ filtered_list_out, size_t filtered_list_limit, char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type) {
-	size_t pkg_count = 0;
-	for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
-		if (ignore_list != NULL && j < ignore_list_len) {
-			int c = strcmp(pkg_namelist[i], ignore_list[j]);
-			while (j < ignore_list_len && c > 0) {
-				j++;
-			}
-			if (c == 0) {
-				j++;
-				continue;
-			}
-		}
-		struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkg_namelist[i]);
+// size_t filter_pkg_updates(pacman_name_ver_t* __restrict__ filtered_list_out, size_t filtered_list_limit, char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type) {
+// 	size_t pkg_count = 0;
+// 	for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
+// 		if (ignore_list != NULL && j < ignore_list_len) {
+// 			int c = strcmp(pkg_namelist[i], ignore_list[j]);
+// 			while (j < ignore_list_len && c > 0) {
+// 				j++;
+// 			}
+// 			if (c == 0) {
+// 				j++;
+// 				continue;
+// 			}
+// 		}
+// 		struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkg_namelist[i]);
 
-		if (found_node -> is_non_aur) {
-			continue;
-		}
+// 		if (found_node -> is_non_aur) {
+// 			continue;
+// 		}
 
-		if (fetch_type == GIT && !found_node -> is_git_package) {
-			continue;
-		}
+// 		if (fetch_type == GIT && !found_node -> is_git_package) {
+// 			continue;
+// 		}
 
-		if (fetch_type != GIT && found_node -> is_git_package) {
-			continue;
-		}
+// 		if (fetch_type != GIT && found_node -> is_git_package) {
+// 			continue;
+// 		}
 
-		if (fetch_type == NON_GIT_UPGRADES && found_node -> update_type != UPGRADE) {
-			continue;
-		}
+// 		if (fetch_type == NON_GIT_UPGRADES && found_node -> update_type != UPGRADE) {
+// 			continue;
+// 		}
 
-		if (fetch_type == NON_GIT_DOWNGRADES && found_node -> update_type != DOWNGRADE) {
-			continue;
-		}
+// 		if (fetch_type == NON_GIT_DOWNGRADES && found_node -> update_type != DOWNGRADE) {
+// 			continue;
+// 		}
 
-		if (pkg_count < filtered_list_limit && filtered_list_out != NULL) {
-			filtered_list_out[pkg_count].name    = pkg_namelist[i];
-			filtered_list_out[pkg_count].valid   = 1;
-			filtered_list_out[pkg_count].version = found_node -> updated_ver;
-		}
+// 		if (pkg_count < filtered_list_limit && filtered_list_out != NULL) {
+// 			filtered_list_out[pkg_count].name    = pkg_namelist[i];
+// 			filtered_list_out[pkg_count].valid   = 1;
+// 			filtered_list_out[pkg_count].version = found_node -> updated_ver;
+// 		}
 
-		pkg_count++;
-	}
+// 		pkg_count++;
+// 	}
 
-	return pkg_count;
-}
+// 	return pkg_count;
+// }
 
 void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type, enum __aur_action action) {
 	size_t pkg_count = filter_pkg_updates(NULL, 0, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
