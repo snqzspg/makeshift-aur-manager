@@ -105,6 +105,7 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 					v = new_ver_strs[git_pkgs_count];
 					git_pkgs[git_pkgs_count].version = v;
 				}
+				git_pkgs_count++;
 			}
 
 			(void) load_ver_cache();
