@@ -6,6 +6,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "file_utils.h"
+#include "logger/logger.h"
 #include "pacman.h"
 #include "unistd_helper.h"
 
@@ -175,23 +177,52 @@ void clean_up_pacman_output(void) {
 }
 
 int perform_pacman_checkupdates() {
+	int out_fds[2];
+
+	int pipe_failed = 0;
+
+	run_syscall_print_w_act(pipe(out_fds), pipe_failed = 1;, "NOTE", __FILE__, __LINE__);
+
 	int check_upd_child = fork();
 
 	if (check_upd_child == 0) {
-		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/checkupdates\033[0m ---\n");
+		// (void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/checkupdates\033[0m ---\n");
+		if (!pipe_failed) {
+			run_syscall_print_w_act(close(out_fds[0]), ;, "WARNING", __FILE__, __LINE__);
+			run_syscall_print_w_act(dup2(out_fds[1], STDOUT_FILENO), close(out_fds[1]); pipe_failed = 1;, "WARNING", __FILE__, __LINE__);
+			run_syscall_print_w_act(close(out_fds[1]), ;, "WARNING", __FILE__, __LINE__);
+		}
 
 		if (execl("/usr/bin/checkupdates", "checkupdates", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] /usr/bin/checkupdates \033[1;31mexecution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" /usr/bin/checkupdates \033[1;31mexecution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return errno;
 		}
 		return -1;
 	} else if (check_upd_child == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		if (!pipe_failed) {
+			(void) close(out_fds[0]);
+			(void) close(out_fds[1]);
+		}
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
 		return -1;
 	} else {
+		if (!pipe_failed) {
+			run_syscall_print_w_act(close(out_fds[1]), ;, "WARNING", __FILE__, __LINE__);
+		}
+
 		int checkupd_exit_stat;
-		run_syscall_print_err_w_ret_errno(waitpid(check_upd_child, &checkupd_exit_stat, 0), __FILE__, __LINE__);
+		run_syscall_print_w_act(waitpid(check_upd_child, &checkupd_exit_stat, 0), close(out_fds[0]); return -1;, "WARNING", __FILE__, __LINE__);
+
+		if (!pipe_failed && WEXITSTATUS(checkupd_exit_stat) == 0) {
+			streamed_content_t updates_output = stream_fd_content_alloc(out_fds[0]);
+
+			(void) write(STDOUT_FILENO, "\n--- \033[1;34mPacman Updates\033[0m ---\n", 35);
+			(void) write(STDOUT_FILENO, updates_output.content, updates_output.len);
+			(void) write(STDOUT_FILENO, "\n", 1);
+
+			stream_fd_content_dealloc(&updates_output);
+		}
 
 		return WEXITSTATUS(checkupd_exit_stat);
 	}
