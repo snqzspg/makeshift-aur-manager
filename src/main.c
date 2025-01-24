@@ -150,96 +150,96 @@ void aur_check_non_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 // 	return pkg_count;
 // }
 
-void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type, enum __aur_action action) {
-	size_t pkg_count = filter_pkg_updates(NULL, 0, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
+// void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type, enum __aur_action action) {
+// 	size_t pkg_count = filter_pkg_updates(NULL, 0, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
 
-	pacman_name_ver_t filtered_list[pkg_count];
+// 	pacman_name_ver_t filtered_list[pkg_count];
 
-	(void) filter_pkg_updates(filtered_list, pkg_count, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
+// 	(void) filter_pkg_updates(filtered_list, pkg_count, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
 
-	char* new_ver_strs[pkg_count];
+// 	char* new_ver_strs[pkg_count];
 
-	(void) memset(new_ver_strs, 0, pkg_count * sizeof(char*));
+// 	(void) memset(new_ver_strs, 0, pkg_count * sizeof(char*));
 
-	if (action >= FETCH) {
-		for (size_t i = 0; i < pkg_count; i++) {
-			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, filtered_list[i].name);
-			char* pkgbase = found_node -> package_base == NULL ? filtered_list[i].name : found_node -> package_base;
+// 	if (action >= FETCH) {
+// 		for (size_t i = 0; i < pkg_count; i++) {
+// 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, filtered_list[i].name);
+// 			char* pkgbase = found_node -> package_base == NULL ? filtered_list[i].name : found_node -> package_base;
 
-			(void) fetch_pkg_base(pkgbase);
-		}
-	}
+// 			(void) fetch_pkg_base(pkgbase);
+// 		}
+// 	}
 
-	if (action >= FETCH /* PATCH */) {
-		if (fetch_type == GIT) {
-			for (size_t i = 0; i < pkg_count; i++) {
-				struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, filtered_list[i].name);
-				char* pkgbase = found_node -> package_base == NULL ? filtered_list[i].name : found_node -> package_base;
+// 	if (action >= FETCH /* PATCH */) {
+// 		if (fetch_type == GIT) {
+// 			for (size_t i = 0; i < pkg_count; i++) {
+// 				struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, filtered_list[i].name);
+// 				char* pkgbase = found_node -> package_base == NULL ? filtered_list[i].name : found_node -> package_base;
 
-				update_existing_git_pkg_base(pkgbase);
-				char* v = extract_existing_pkg_base_ver(pkgbase, 0);
-				if (v != NULL) {
-					new_ver_strs[i] = (char*) malloc((strlen(v) + 1) * sizeof(char));
-					(void) strncpy(new_ver_strs[i], v, strlen(v) + 1);
-					v = new_ver_strs[i];
-					filtered_list[i].version = v;
-				}
-			}
+// 				update_existing_git_pkg_base(pkgbase);
+// 				char* v = extract_existing_pkg_base_ver(pkgbase, 0);
+// 				if (v != NULL) {
+// 					new_ver_strs[i] = (char*) malloc((strlen(v) + 1) * sizeof(char));
+// 					(void) strncpy(new_ver_strs[i], v, strlen(v) + 1);
+// 					v = new_ver_strs[i];
+// 					filtered_list[i].version = v;
+// 				}
+// 			}
 
-			(void) load_ver_cache();
-			merge_in_ver_cache(filtered_list, pkg_count);
-			save_ver_cache();
-			discard_ver_cache();
-			for (size_t i = 0; i < pkg_count; i++) {
-				free(new_ver_strs[i]);
-			}
-		}
-	}
+// 			(void) load_ver_cache();
+// 			merge_in_ver_cache(filtered_list, pkg_count);
+// 			save_ver_cache();
+// 			discard_ver_cache();
+// 			for (size_t i = 0; i < pkg_count; i++) {
+// 				free(new_ver_strs[i]);
+// 			}
+// 		}
+// 	}
 
-	if (action == BUILD) {
-		for (size_t i = 0; i < pkg_count; i++) {
-			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, filtered_list[i].name);
+// 	if (action == BUILD) {
+// 		for (size_t i = 0; i < pkg_count; i++) {
+// 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, filtered_list[i].name);
 
-			char* pkgbase = found_node -> package_base == NULL ? filtered_list[i].name : found_node -> package_base;
+// 			char* pkgbase = found_node -> package_base == NULL ? filtered_list[i].name : found_node -> package_base;
 
-			(void) build_existing_pkg_base(pkgbase);
-		}
-	}
+// 			(void) build_existing_pkg_base(pkgbase);
+// 		}
+// 	}
 
-	if (action == INSTALL) {
-        char* pacman_args[pkg_count + 4];
-		pacman_args[0] = "sudo";
-		pacman_args[1] = "pacman";
-		pacman_args[2] = "-U";
-		pacman_args[pkg_count + 3] = NULL;
+// 	if (action == INSTALL) {
+//         char* pacman_args[pkg_count + 4];
+// 		pacman_args[0] = "sudo";
+// 		pacman_args[1] = "pacman";
+// 		pacman_args[2] = "-U";
+// 		pacman_args[pkg_count + 3] = NULL;
 
-		for (size_t i = 0; i < pkg_count; i++) {
-			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, filtered_list[i].name);
-			char* pkgbase = found_node -> package_base == NULL ? filtered_list[i].name : found_node -> package_base;
+// 		for (size_t i = 0; i < pkg_count; i++) {
+// 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, filtered_list[i].name);
+// 			char* pkgbase = found_node -> package_base == NULL ? filtered_list[i].name : found_node -> package_base;
 
-			char* pkg_file = pkg_file_path_stream_alloc(filtered_list[i].name, pkgbase, 0);
-			if (pkg_file == NULL) {
-				continue;
-			}
+// 			char* pkg_file = pkg_file_path_stream_alloc(filtered_list[i].name, pkgbase, 0);
+// 			if (pkg_file == NULL) {
+// 				continue;
+// 			}
 
-			(void) fprintf(stderr, "[DEBUG] This package would be at \033[1;33m%s\033[0m.\n", pkg_file);
+// 			(void) fprintf(stderr, "[DEBUG] This package would be at \033[1;33m%s\033[0m.\n", pkg_file);
 
-			pacman_args[i + 3] = pkg_file;
-		}
+// 			pacman_args[i + 3] = pkg_file;
+// 		}
 
-		(void) fprintf(stderr, "[INFO] Use the command \033[1;32m");
-		for (size_t i = 0; i < pkg_count + 3; i++) {
-			(void) fprintf(stderr, "%s ", pacman_args[i]);
-		}
-		(void) fprintf(stderr, "\033[0mto install.\n");
+// 		(void) fprintf(stderr, "[INFO] Use the command \033[1;32m");
+// 		for (size_t i = 0; i < pkg_count + 3; i++) {
+// 			(void) fprintf(stderr, "%s ", pacman_args[i]);
+// 		}
+// 		(void) fprintf(stderr, "\033[0mto install.\n");
 
-		(void) run_subprocess_v(NULL, "/usr/bin/sudo", (char**) pacman_args, NULL, STDIN_FILENO, NULL, 0, 1);
+// 		(void) run_subprocess_v(NULL, "/usr/bin/sudo", (char**) pacman_args, NULL, STDIN_FILENO, NULL, 0, 1);
 
-		for (size_t i = 3; i < pkg_count + 3; i++) {
-			free(pacman_args[i]);
-		}
-	}
-}
+// 		for (size_t i = 3; i < pkg_count + 3; i++) {
+// 			free(pacman_args[i]);
+// 		}
+// 	}
+// }
 
 void perform_updates_summary_report(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict) {
 	aur_check_non_git(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
@@ -430,9 +430,9 @@ int main(int argc, char** argv) {
 					}
 
 					qsort(excludes, n_excludes, sizeof(char*), pkg_name_cmp);
-					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excludes, n_excludes, fetch_mode, action);
+					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excludes, n_excludes, NULL, 0, fetch_mode, action);
 				} else {
-					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, NULL, 0, fetch_mode, action);
+					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, NULL, 0, NULL, 0, fetch_mode, action);
 				}
 				clean_up_pacman_output();
 				return 0;
