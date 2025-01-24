@@ -7,6 +7,7 @@
 
 #include "../aur.h"
 #include "../file_utils.h"
+#include "../logger/logger.h"
 #include "../pacman.h"
 #include "../hashtable.h"
 #include "../subprocess_unix.h"
@@ -142,16 +143,20 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 				continue;
 			}
 
-			(void) fprintf(stderr, "[DEBUG] This package would be at \033[1;33m%s\033[0m.\n", pkg_file);
+			// (void) fprintf(stderr, "[DEBUG] This package would be at \033[1;33m%s\033[0m.\n", pkg_file);
+			(void) debug_printf(" This package would be at \033[1;33m%s\033[0m.\n", pkg_file);
 
 			pacman_args[i + n_pacman_opts + 3] = pkg_file;
 		}
 
-		(void) fprintf(stderr, "[INFO] Use the command \033[1;32m");
-		for (size_t i = 0; i < n_pacman_args; i++) {
-			(void) fprintf(stderr, "%s ", pacman_args[i]);
+		// (void) fprintf(stderr, "[INFO] Use the command \033[1;32m");
+		(void) info_printf(" Use the command \033[1;32m");
+		if (is_logging_type_enabled(INFO)) {
+			for (size_t i = 0; i < n_pacman_args; i++) {
+				(void) fprintf(stderr, "%s ", pacman_args[i]);
+			}
+			(void) fprintf(stderr, "\033[0mto install.\n");
 		}
-		(void) fprintf(stderr, "\033[0mto install.\n");
 
 		(void) run_subprocess_v(NULL, "/usr/bin/sudo", (char**) pacman_args, NULL, STDIN_FILENO, NULL, 0, 1);
 
@@ -230,7 +235,8 @@ size_t filter_aur_pkgs(char** __restrict__ pkgs_out, size_t n_pkgs_limit, char**
 			}
 			pkgs_count++;
 		} else if (!quiet) {
-			(void) fprintf(stderr, "[NOTE] '%s' is not found on the AUR.\n", pkgs_in[i]);
+			// (void) fprintf(stderr, "[NOTE] '%s' is not found on the AUR.\n", pkgs_in[i]);
+			(void) note_printf(" '%s' is not found on the AUR.\n", pkgs_in[i]);
 		}
 	}
 

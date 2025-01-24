@@ -8,6 +8,7 @@
 #include "aur.h"
 #include "aur/pkg_cache.h"
 #include "file_utils.h"
+#include "logger/logger.h"
 #include "pacman.h"
 #include "hashtable.h"
 #include "subprocess_unix.h"
@@ -304,6 +305,7 @@ void print_usage(const char* arg0) {
 }
 
 int main(int argc, char** argv) {
+	config_logging(DEBUG, isatty(STDOUT_FILENO));
 	if (argc > 1) {
 		if (strcmp(argv[1], "help") == 0) {
 			print_usage(argv[0]);
