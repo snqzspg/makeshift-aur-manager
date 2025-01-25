@@ -19,6 +19,12 @@
 
 #include "pkg_install_stages.h"
 
+const char* exec_arg0 = NULL;
+
+void fill_arg0(const char* arg0) {
+	exec_arg0 = arg0;
+}
+
 size_t filter_pkg_updates(char** __restrict__ filtered_list_out, size_t filtered_list_limit, char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, enum __aur_fetch_mode fetch_type) {
 	size_t pkg_count = 0;
 	for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
@@ -119,12 +125,29 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 	}
 
 	if (action >= BUILD) {
+		char* failed_pkgs[pkg_count];
+		size_t failed_pkgs_count = 0;
 		for (size_t i = 0; i < pkg_count; i++) {
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkgs[i]);
 
 			char* pkgbase = found_node -> package_base == NULL ? pkgs[i] : found_node -> package_base;
 
+			if (!does_pkg_cache_exist() || !pkg_base_in_cache(found_node -> package_base)) {
+				(void) note_printf(" the package base, '%s', of package '%s' is not found.\n", pkgbase, pkgs[i]);
+				failed_pkgs[failed_pkgs_count++] = pkgs[i];
+			}
+
 			(void) build_existing_pkg_base(pkgbase);
+		}
+
+		if (failed_pkgs_count > 0) {
+			(void) fprintf(stderr, "One or more packages are not fetched.\n");
+			(void) fprintf(stderr, "Run with command '\033[1;32m%s aur-fetch ", exec_arg0);
+			for (size_t i = 0; i < failed_pkgs_count; i++) {
+				(void) fprintf(stderr, "%s%s", failed_pkgs[i], i == failed_pkgs_count - 1 ? "" : " ");
+			}
+			(void) fprintf(stderr, "\033[0m' to fetch the packages first, \033[1;32minspect the PKGBUILDs\033[0m, then re-run the build or install command.\n");
+			return;
 		}
 	}
 

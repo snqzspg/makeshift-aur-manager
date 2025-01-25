@@ -79,6 +79,8 @@ void print_usage(const char* arg0) {
 
 int main(int argc, char** argv) {
 	config_logging(DEBUG, isatty(STDOUT_FILENO));
+	fill_arg0(argv[0]);
+
 	if (argc > 1) {
 		if (strcmp(argv[1], "help") == 0) {
 			print_usage(argv[0]);
