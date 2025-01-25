@@ -58,15 +58,27 @@ int is_logging_type_enabled(enum __logging_level type) {
 }
 
 static int logging_vprintf(enum __logging_level logging_type, const char* fmt, va_list args) {
+	if (!is_logging_type_enabled(logging_type)) {
+		return 0;
+	}
+
 	const char* label = get_logging_label(logging_type);
 	const size_t extended_fmt_length = snprintf(NULL, 0, "[%s]%s", label, fmt);
 	char extended_fmt[extended_fmt_length + 1];
     (void) snprintf(extended_fmt, extended_fmt_length + 1, "[%s]%s", label, fmt);
-	// (void) strcpy(extended_fmt, "[");
-	// (void) strcat(extended_fmt, label);
-	// (void) strcat(extended_fmt, "] ");
-	// (void) strcat(extended_fmt, fmt);
 	return vfprintf(stderr, extended_fmt, args);
+}
+
+void logging_perror(enum __logging_level logging_type, const char* prefix) {
+	if (!is_logging_type_enabled(logging_type)) {
+		return;
+	}
+
+	const char* label = get_logging_label(logging_type);
+	size_t l = snprintf(NULL, 0, "[%s]%s", label, prefix);
+	char error_pfx[l + 1];
+	(void) snprintf(error_pfx, l + 1, "[%s]%s", label, prefix);
+	perror(error_pfx);
 }
 
 void config_logging(enum __logging_level set_logging_type, int show_color) {
@@ -76,66 +88,72 @@ void config_logging(enum __logging_level set_logging_type, int show_color) {
 
 int debug_printf(const char* fmt, ...) {
 	va_list args;
-	if (!is_logging_type_enabled(DEBUG)) {
-		return 0;
-	}
 	va_start(args, fmt);
 	int ret = logging_vprintf(DEBUG, fmt, args);
 	va_end(args);
 	return ret;
 }
 
+void debug_perror(const char* prefix) {
+	logging_perror(DEBUG, prefix);
+}
+
 int info_printf(const char* fmt, ...) {
 	va_list args;
-	if (!is_logging_type_enabled(INFO)) {
-		return 0;
-	}
 	va_start(args, fmt);
 	int ret = logging_vprintf(INFO, fmt, args);
 	va_end(args);
 	return ret;
 }
 
+void info_perror(const char* prefix) {
+	logging_perror(INFO, prefix);
+}
+
 int note_printf(const char* fmt, ...) {
 	va_list args;
-	if (!is_logging_type_enabled(NOTE)) {
-		return 0;
-	}
 	va_start(args, fmt);
 	int ret = logging_vprintf(NOTE, fmt, args);
 	va_end(args);
 	return ret;
 }
 
+void note_perror(const char* prefix) {
+	logging_perror(NOTE, prefix);
+}
+
 int warning_printf(const char* fmt, ...) {
 	va_list args;
-	if (!is_logging_type_enabled(WARNING)) {
-		return 0;
-	}
 	va_start(args, fmt);
 	int ret = logging_vprintf(WARNING, fmt, args);
 	va_end(args);
 	return ret;
 }
 
+void warning_perror(const char* prefix) {
+	logging_perror(WARNING, prefix);
+}
+
 int error_printf(const char* fmt, ...) {
 	va_list args;
-	if (!is_logging_type_enabled(ERROR)) {
-		return 0;
-	}
 	va_start(args, fmt);
 	int ret = logging_vprintf(ERROR, fmt, args);
 	va_end(args);
 	return ret;
 }
 
+void error_perror(const char* prefix) {
+	logging_perror(ERROR, prefix);
+}
+
 int critical_printf(const char* fmt, ...) {
 	va_list args;
-	if (!is_logging_type_enabled(CRITICAL)) {
-		return 0;
-	}
 	va_start(args, fmt);
 	int ret = logging_vprintf(CRITICAL, fmt, args);
 	va_end(args);
 	return ret;
+}
+
+void critical_perror(const char* prefix) {
+	logging_perror(CRITICAL, prefix);
 }
