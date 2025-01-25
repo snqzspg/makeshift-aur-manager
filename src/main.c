@@ -38,7 +38,7 @@ int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_
 	if (aur_upd_child == -1) {
 		(void) close(less_pipe_fds[0]);
 		(void) close(less_pipe_fds[1]);
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return -1;
 	} else if (aur_upd_child == 0) {
 		run_syscall_print_w_act(close(less_pipe_fds[0]), ;, "WARNING", __FILE__, __LINE__);
@@ -105,12 +105,12 @@ int main(int argc, char** argv) {
 			if (argc - 2 > 0) {
 				for (int i = 2, j = 0; i < argc; i += 2, j++) {
 					if (strcmp(argv[i], "--exclude") != 0) {
-						(void) fprintf(stderr, "[ERROR][aur-fetchupdates] Unrecognized option. Currently only supports --exclude.\n");
+						(void) error_printf("[aur-fetchupdates] Unrecognized option. Currently only supports --exclude.\n");
 						return 1;
 					}
 
 					if (i + 1 >= argc) {
-						(void) fprintf(stderr, "[ERROR][aur-fetchupdates] Missing operand for --exclude.\n");
+						(void) error_printf("[aur-fetchupdates] Missing operand for --exclude.\n");
 						return 1;
 					}
 				}
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 		) {
 			return pkg_list_manage_subseq(argv[1], argc - 2, argv + 2);
 		} else {
-			(void) fprintf(stderr, "[ERROR] Unknown option supplied.\n");
+			(void) error_printf(" Unknown option supplied.\n");
 			print_usage(argv[0]);
 			return EXIT_FAILURE;
 		}

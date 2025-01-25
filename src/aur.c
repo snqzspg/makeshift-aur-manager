@@ -4,6 +4,8 @@
 
 #include <curl/curl.h>
 
+#include "logger/logger.h"
+
 #include "aur.h"
 
 typedef struct {
@@ -21,7 +23,8 @@ static size_t receive_info(char *ptr, size_t size, size_t nmemb, void* userdata)
 		resp -> response = realloc(resp -> response, resp -> size + total_size + 1);
 	}
 	if (resp -> response == NULL) {
-		perror("[ERROR]");
+		// perror("[ERROR]");
+		error_perror("[fetching https://aur.archlinux.org/rpc/v5/info][receive_info]");
 		return 0;
 	}
 	memcpy(resp -> response + resp -> size, ptr, total_size);
@@ -82,7 +85,7 @@ const char* get_packages_info(const char* const* packages, size_t n_packages) {
 	res = curl_easy_perform(curl);
 
 	if (res != CURLE_OK) {
-		(void) fprintf(stderr, "[ERROR] %s\n", curl_easy_strerror(res));
+		(void) error_printf(" Failed getting response from %s - %s\n", "https://aur.archlinux.org/rpc/v5/info", curl_easy_strerror(res));
 		return NULL;
 	}
 
