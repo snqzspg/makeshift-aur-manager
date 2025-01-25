@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "logger/logger.h"
 #include "unistd_helper.h"
 
 /**
@@ -43,36 +44,36 @@ int run_subprocess_v(const char* pwd, const char* exec_path, char* const args[],
 			(void) close(pipefds[0]);
 			(void) close(pipefds[1]);
 		}
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return -EXIT_FAILURE;
 	} else if (subprocess == 0) {
 		if (stdin_fd_in != STDIN_FILENO && stdin_fd_in >= 0) {
-			run_syscall_print_w_act(dup2(stdin_fd_in, STDIN_FILENO), 
+			run_syscall_print_err_w_act(dup2(stdin_fd_in, STDIN_FILENO), 
 				if (stdout_fd != NULL) {
 					(void) close(pipefds[0]);
 					(void) close(pipefds[1]);
 				}
 				_exit(-EXIT_FAILURE);
 				return -EXIT_FAILURE;
-			, "ERROR", __FILE__, __LINE__);
-			run_syscall_print_w_act(close(stdin_fd_in), ;, "WARNING", __FILE__, __LINE__);
+			, error_printf, __FILE__, __LINE__);
+			run_syscall_print_err_w_act(close(stdin_fd_in), ;, warning_printf, __FILE__, __LINE__);
 		}
 		if (fds_to_close != NULL) {
 			for (int* i = fds_to_close; *i <= 0; i++) {
-				run_syscall_print_w_act(close(*i), ;, "WARNING", __FILE__, __LINE__);
+				run_syscall_print_err_w_act(close(*i), ;, warning_printf, __FILE__, __LINE__);
 			}
 		}
 		if (stdout_fd != NULL) {
-			run_syscall_print_w_act(close(pipefds[0]), close(pipefds[1]); _exit(-EXIT_FAILURE); return -EXIT_FAILURE;, "ERROR", __FILE__, __LINE__);
-			run_syscall_print_w_act(dup2(pipefds[1], STDOUT_FILENO), close(pipefds[1]); _exit(-EXIT_FAILURE); return -EXIT_FAILURE;, "ERROR", __FILE__, __LINE__);
-			run_syscall_print_w_act(close(pipefds[1]), ;, "WARNING", __FILE__, __LINE__);
+			run_syscall_print_err_w_act(close(pipefds[0]), close(pipefds[1]); _exit(-EXIT_FAILURE); return -EXIT_FAILURE;, error_printf, __FILE__, __LINE__);
+			run_syscall_print_err_w_act(dup2(pipefds[1], STDOUT_FILENO), close(pipefds[1]); _exit(-EXIT_FAILURE); return -EXIT_FAILURE;, error_printf, __FILE__, __LINE__);
+			run_syscall_print_err_w_act(close(pipefds[1]), ;, warning_printf, __FILE__, __LINE__);
 		}
 
 		if (pwd != NULL) {
 			if (!quiet)
 				(void) fprintf(stderr, "--- \033[1;32mChanging pwd for %s to %s\033[0m ---\n", args[0], pwd);
 
-			run_syscall_print_w_act(chdir(pwd), return -EXIT_FAILURE;, "ERROR", __FILE__, __LINE__);
+			run_syscall_print_err_w_act(chdir(pwd), _exit(EXIT_FAILURE); return -EXIT_FAILURE;, error_printf, __FILE__, __LINE__);
 		}
 
 		if (!quiet) {
@@ -84,8 +85,9 @@ int run_subprocess_v(const char* pwd, const char* exec_path, char* const args[],
 		}
 
 		if (execv(exec_path, args) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m%s execution failed!\033[0m\n", exec_path);
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m%s execution failed!\033[0m\n", exec_path);
+			(void) note_printf(" %s\n", strerror(errno));
+			_exit(-1);
 			return -EXIT_FAILURE;
 		}
 

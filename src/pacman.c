@@ -125,6 +125,7 @@ pacman_names_vers_t get_installed_non_pacman() {
 
 		run_syscall_print_err_w_ret(execl("/usr/bin/pacman", "pacman", "-Qm", (char *) NULL), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
 
+		_exit(EXIT_FAILURE);
 		return PACMAN_PKGS_NULL_RET;
 	} else if (pacman_child_proc == -1) {
 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
@@ -281,6 +282,7 @@ int compare_versions(const char* ver1, const char* ver2) {
 		run_syscall_print_err_w_ret(close(vercmp_fds[1]), 0, __FILE__, __LINE__);
 
 		run_syscall_print_err_w_ret(execl("/usr/bin/vercmp", "vercmp", ver1, ver2, NULL), 0, __FILE__, __LINE__);
+		_exit(EXIT_FAILURE);
 		return 0;
 	} else {
 		run_syscall_print_err_w_ret(close(vercmp_fds[1]), 0, __FILE__, __LINE__);

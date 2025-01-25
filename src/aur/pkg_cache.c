@@ -9,6 +9,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "../logger/logger.h"
+
 #include "../unistd_helper.h"
 #include "pkg_cache.h"
 #include "../file_utils.h"
@@ -177,21 +179,21 @@ char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, cha
 		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return NULL;
 	} else if (makepkg_subprocess == 0) {
-		run_syscall_print_w_act(close(output_fds[0]), close(output_fds[1]); return NULL;, "ERROR", __FILE__, __LINE__);
-		run_syscall_print_w_act(dup2(output_fds[1], STDOUT_FILENO), close(output_fds[1]); return NULL;, "ERROR", __FILE__, __LINE__);
-		run_syscall_print_w_act(close(output_fds[1]), return NULL;, "ERROR", __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(output_fds[0]), close(output_fds[1]); exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(dup2(output_fds[1], STDOUT_FILENO), close(output_fds[1]); exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(output_fds[1]), exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
 
 		if (!quiet)
 			(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", pkgbase_path);
 
-		run_syscall_print_w_act(chdir(pkgbase_path), return NULL;, "ERROR", __FILE__, __LINE__);
+		run_syscall_print_err_w_act(chdir(pkgbase_path), _exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
 
 		if (!quiet)
 			(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg --packagelist\033[0m ---\n");
 
 		if (execl("/usr/bin/makepkg", "makepkg", "--packagelist", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return NULL;
 		}
 
@@ -204,7 +206,7 @@ char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, cha
 		run_syscall_print_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), close(output_fds[0]); return NULL;, "ERROR", __FILE__, __LINE__);
 
 		if (WEXITSTATUS(makepkg_stat) != 0) {
-			(void) fprintf(stderr, "[WARNING] makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
+			(void) warning_printf(" makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
 			return NULL;
 		}
 	}
