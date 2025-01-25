@@ -15,7 +15,7 @@
 #include "pkg_update_report.h"
 
 void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict) {
-	(void) write(STDOUT_FILENO, "--- \033[1;36mAUR Git Packages\033[0m ---\n", 36);
+	int git_pkg_available = 0;
 	pacman_names_vers_t* ver_cache = load_ver_cache();
 	for (size_t i = 0, j = 0; i < pkg_namelist_len; i++) {
 		struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkg_namelist[i]);
@@ -23,6 +23,11 @@ void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t inst
 		if (found_node -> is_non_aur || !found_node -> is_git_package) {
 			continue;
 		}
+
+		if (!git_pkg_available)
+			(void) write(STDOUT_FILENO, "--- \033[1;36mAUR Git Packages\033[0m ---\n", 36);
+			
+		git_pkg_available = 1;
 
 		char* revised_updated_ver = found_node -> updated_ver;
 
@@ -43,7 +48,7 @@ void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t inst
 		int  vercmp = compare_versions(found_node -> installed_ver, revised_updated_ver);
 		enum update_stat revised_update_type = vercmp == 0 ? UP_TO_DATE : (vercmp < 0 ? UPGRADE : DOWNGRADE);
 
-		char *col   = revised_update_type == UPGRADE ? "\033[32m" : (revised_update_type == DOWNGRADE ? "\033[31m" : "");
+		char *col   = revised_update_type == UPGRADE ? "\033[32m" : (revised_update_type == DOWNGRADE ? "\033[31m" : "\033[2m");
 		char *arrow = revised_update_type == UPGRADE ? "->" : (revised_update_type == DOWNGRADE ? "<-" : "==");
 		(void) printf("%s %s\033[1m%s\033[0m %s %s\033[1m%s\033[0m\n", pkg_namelist[i], col, found_node -> installed_ver, arrow, col, revised_updated_ver);
 	}
