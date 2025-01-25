@@ -23,7 +23,6 @@ static size_t receive_info(char *ptr, size_t size, size_t nmemb, void* userdata)
 		resp -> response = realloc(resp -> response, resp -> size + total_size + 1);
 	}
 	if (resp -> response == NULL) {
-		// perror("[ERROR]");
 		error_perror("[fetching https://aur.archlinux.org/rpc/v5/info][receive_info]");
 		return 0;
 	}

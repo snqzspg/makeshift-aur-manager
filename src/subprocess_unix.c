@@ -95,10 +95,10 @@ int run_subprocess_v(const char* pwd, const char* exec_path, char* const args[],
 		return -EXIT_FAILURE;
 	} else {
 		if (stdin_fd_in != STDIN_FILENO && stdin_fd_in >= 0) {
-			run_syscall_print_w_act(close(stdin_fd_in), ;, "WARNING", __FILE__, __LINE__);
+			run_syscall_print_err_w_act(close(stdin_fd_in), ;, warning_printf, __FILE__, __LINE__);
 		}
 		if (stdout_fd != NULL) {
-			run_syscall_print_w_act(close(pipefds[1]), ;, "WARNING", __FILE__, __LINE__);
+			run_syscall_print_err_w_act(close(pipefds[1]), ;, warning_printf, __FILE__, __LINE__);
 			*stdout_fd = pipefds[0];
 		}
 

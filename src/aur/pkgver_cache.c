@@ -5,8 +5,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../pacman.h"
 #include "../file_utils.h"
+#include "../logger/logger.h"
+#include "../pacman.h"
 #include "pkg_cache.h"
 
 #include "pkgver_cache.h"
@@ -28,16 +29,17 @@ pacman_names_vers_t* load_ver_cache() {
     int fd = open(pkg_ver_cache_file, O_RDONLY);
 	if (fd < 0) {
 		if (errno == ENOENT) {
+			(void) debug_printf(" '%s' does not exist - returning NULL to trigger creation of the file.", pkg_ver_cache_file);
 			return &ver_cache_loaded;
 		}
-		(void) fprintf(stderr, "[ERROR] \033[1;31mOpening %s failed\033[0m! - %s\n", pkg_ver_cache_file, strerror(errno));
+		(void) error_printf(" \033[1;31mOpening %s failed\033[0m! - %s\n", pkg_ver_cache_file, strerror(errno));
 		return &ver_cache_loaded;
 	}
 
     ver_cache_fdstream = stream_fd_content_alloc(fd);
     
 	if (close(fd) < 0) {
-		(void) fprintf(stderr, "[ERROR] \033[1;31mClosing %s failed\033[0m! - %s\n", pkg_ver_cache_file, strerror(errno));
+		(void) error_printf(" \033[1;31mClosing %s failed\033[0m! - %s\n", pkg_ver_cache_file, strerror(errno));
 	}
 
 	if (ver_cache_fdstream.content == NULL) {
@@ -53,7 +55,7 @@ pacman_names_vers_t* load_ver_cache() {
         ver_cache_loaded.pkg_names_vers = realloc(ver_cache_loaded.pkg_names_vers, ver_cache_loaded.n_items * sizeof(pacman_name_ver_t));
     }
     if (ver_cache_loaded.pkg_names_vers == NULL) {
-        perror("[ERROR][load_ver_cache]");
+        error_perror("[load_ver_cache]");
         stream_fd_content_dealloc(&ver_cache_fdstream);
         return &ver_cache_loaded;
     }

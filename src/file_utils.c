@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "file_utils.h"
+#include "logger/logger.h"
 
 streamed_content_t STR_CT_NULL_RET = {.content = NULL, .len = 0};
 
@@ -15,7 +16,7 @@ streamed_content_t stream_fd_content_alloc(int fd) {
 	size_t content_size = FRAG_SIZE;
 
 	if (content == NULL) {
-		perror("[ERROR][stream_fd_content_alloc]");
+		error_perror("[stream_fd_content_alloc]");
 		return STR_CT_NULL_RET;
 	}
 
@@ -26,7 +27,7 @@ streamed_content_t stream_fd_content_alloc(int fd) {
 	do {
 		n_read = read(fd, fragment, FRAG_SIZE);
 		if (n_read < 0) {
-			(void) fprintf(stderr, "[ERROR][stream_fd_content_alloc] \033[1;31mReading fd failed\033[0m! - %s\n", strerror(errno));
+			(void) error_printf("[stream_fd_content_alloc] \033[1;31mReading fd failed\033[0m! - %s\n", strerror(errno));
 			free(content);
 			return STR_CT_NULL_RET;
 		}
@@ -41,7 +42,7 @@ streamed_content_t stream_fd_content_alloc(int fd) {
 			}
 			content = (char *) realloc(content, content_size * sizeof(char));
 			if (content == NULL) {
-				perror("[ERROR][stream_fd_content_alloc]");
+				error_perror("[stream_fd_content_alloc]");
 				return STR_CT_NULL_RET;
 			}
 		}
@@ -63,7 +64,7 @@ streamed_content_t stream_fd_content_alloc(int fd) {
 	content_size++;
 	content = (char *) realloc(content, content_size * sizeof(char));
 	if (content == NULL) {
-		perror("[ERROR][stream_fd_content_alloc]");
+		error_perror("[stream_fd_content_alloc]");
 		return STR_CT_NULL_RET;
 	}
 
@@ -83,7 +84,7 @@ int load_file_contents(char* __restrict__ dest, size_t limit, const char* path) 
 	int fd = open(path, O_RDONLY);
 
 	if (fd < 0) {
-		(void) fprintf(stderr, "[ERROR] \033[1;31mOpening %s failed\033[0m! - %s\n", path, strerror(errno));
+		(void) error_printf(" \033[1;31mOpening %s failed\033[0m! - %s\n", path, strerror(errno));
 		return -1;
 	}
 
@@ -100,7 +101,7 @@ int load_file_contents(char* __restrict__ dest, size_t limit, const char* path) 
 	do {
 		n_read = read(fd, fragment, FRAG_SIZE);
 		if (n_read < 0) {
-			(void) fprintf(stderr, "[ERROR] \033[1;31mReading %s failed\033[0m! - %s\n", path, strerror(errno));
+			(void) error_printf(" \033[1;31mReading %s failed\033[0m! - %s\n", path, strerror(errno));
 			return -1;
 		}
 
@@ -112,7 +113,7 @@ int load_file_contents(char* __restrict__ dest, size_t limit, const char* path) 
 	} while (n_read != 0);
 
 	if (close(fd) < 0) {
-		(void) fprintf(stderr, "[ERROR] \033[1;31mClosing %s failed\033[0m! - %s\n", path, strerror(errno));
+		(void) error_printf(" \033[1;31mClosing %s failed\033[0m! - %s\n", path, strerror(errno));
 	}
 
 	return (int) total_file_size;

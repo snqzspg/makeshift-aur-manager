@@ -5,6 +5,7 @@
 
 #include <jsmn.h>
 
+#include "logger/logger.h"
 #include "hashtable.h"
 #include "pacman.h"
 
@@ -153,7 +154,7 @@ void process_response_json(char* mutable_json_str, hashtable_t* map) {
 	}
 
 	if (!results_found) {
-		(void) fprintf(stderr, "[WARNING] Cannot find the key \"results\" inside response JSON.\n");
+		(void) error_printf(" Cannot find the key \"results\" inside response JSON.\n");
 		return;
 	}
 

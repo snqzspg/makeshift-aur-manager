@@ -271,7 +271,6 @@ size_t filter_aur_pkgs(char** __restrict__ pkgs_out, size_t n_pkgs_limit, char**
 			}
 			pkgs_count++;
 		} else if (!quiet) {
-			// (void) fprintf(stderr, "[NOTE] '%s' is not found on the AUR.\n", pkgs_in[i]);
 			(void) note_printf(" '%s' is not found on the AUR.\n", pkgs_in[i]);
 		}
 	}

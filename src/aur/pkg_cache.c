@@ -21,7 +21,7 @@ int   pkg_cache_folder_len = 13;
 int create_pkg_cache() {
 	if (mkdir(pkg_cache_folder, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) < 0) {
 		if (errno != EEXIST) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
+			(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
 			return -1;
 		}
 	}
@@ -49,7 +49,7 @@ size_t write_pkg_base_path(char* __restrict__ dest, size_t limit, const char* pk
 	return limit < path_len ? limit : path_len;
 }
 
-const char* f_suffix = ".pkg.tar.zst";
+// const char* f_suffix = ".pkg.tar.zst";
 char* pkg_file_path_stash = NULL;
 
 size_t write_pkg_file_path(char* __restrict__ dest, size_t limit, const char* pkg_name, const char* pkg_base, char quiet) {

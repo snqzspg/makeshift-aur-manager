@@ -23,7 +23,7 @@ static char* record_pacman_output(int in_fd, size_t* __restrict__ n_chars_record
 	if (pacman_output == NULL) {
 		pacman_output = (char *) malloc(1024);
 		if (pacman_output == NULL) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+			(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
 			return NULL;
 		}
 	}
@@ -42,7 +42,7 @@ static char* record_pacman_output(int in_fd, size_t* __restrict__ n_chars_record
 		}
 
 		if (chars_read < 0) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__, strerror(errno));
+			(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__, strerror(errno));
 			break;
 		}
 
@@ -114,32 +114,35 @@ pacman_names_vers_t ret_list = {
 pacman_names_vers_t get_installed_non_pacman() {
 	int pacman_pipe_fds[2];
 
-	run_syscall_print_err_w_ret(pipe(pacman_pipe_fds), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+	run_syscall_print_err_w_act(pipe(pacman_pipe_fds), return PACMAN_PKGS_NULL_RET;, error_printf, __FILE__, __LINE__);
 
 	int pacman_child_proc = fork();
 
 	if (pacman_child_proc == 0) {
-		run_syscall_print_err_w_ret(close(pacman_pipe_fds[0]), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(dup2(pacman_pipe_fds[1], STDOUT_FILENO), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(close(pacman_pipe_fds[1]), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(pacman_pipe_fds[0]), ;, warning_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(dup2(pacman_pipe_fds[1], STDOUT_FILENO), close(pacman_pipe_fds[1]); _exit(EXIT_FAILURE); return PACMAN_PKGS_NULL_RET;, error_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(pacman_pipe_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
-		run_syscall_print_err_w_ret(execl("/usr/bin/pacman", "pacman", "-Qm", (char *) NULL), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(execl("/usr/bin/pacman", "pacman", "-Qm", (char *) NULL),
+			_exit(EXIT_FAILURE);
+			return PACMAN_PKGS_NULL_RET;
+		, error_printf, __FILE__, __LINE__);
 
 		_exit(EXIT_FAILURE);
 		return PACMAN_PKGS_NULL_RET;
 	} else if (pacman_child_proc == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
 		return PACMAN_PKGS_NULL_RET;
 	} else {
-		run_syscall_print_err_w_ret(close(pacman_pipe_fds[1]), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(pacman_pipe_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
 		int pacman_exit_stat;
-		run_syscall_print_err_w_ret(waitpid(pacman_child_proc, &pacman_exit_stat, 0), PACMAN_PKGS_NULL_RET, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(pacman_child_proc, &pacman_exit_stat, 0), (void) close(pacman_pipe_fds[0]); return PACMAN_PKGS_NULL_RET;, error_printf, __FILE__, __LINE__);
 
 		int pacman_ret_code = WEXITSTATUS(pacman_exit_stat);
 
 		if (!WIFEXITED(pacman_exit_stat)) {
-			(void) fprintf(stderr, "[WARNING] pacman exited with code %d.\n", pacman_ret_code);
+			(void) warning_printf(" pacman exited with code %d.\n", pacman_ret_code);
 		}
 
 		size_t pacman_out_len = 0;
@@ -189,9 +192,9 @@ int perform_pacman_checkupdates() {
 	if (check_upd_child == 0) {
 		// (void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/checkupdates\033[0m ---\n");
 		if (!pipe_failed) {
-			run_syscall_print_w_act(close(out_fds[0]), ;, "WARNING", __FILE__, __LINE__);
-			run_syscall_print_w_act(dup2(out_fds[1], STDOUT_FILENO), close(out_fds[1]); pipe_failed = 1;, "WARNING", __FILE__, __LINE__);
-			run_syscall_print_w_act(close(out_fds[1]), ;, "WARNING", __FILE__, __LINE__);
+			run_syscall_print_err_w_act(close(out_fds[0]), ;, warning_printf, __FILE__, __LINE__);
+			run_syscall_print_err_w_act(dup2(out_fds[1], STDOUT_FILENO), close(out_fds[1]); pipe_failed = 1;, warning_printf, __FILE__, __LINE__);
+			run_syscall_print_err_w_act(close(out_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 		}
 
 		if (execl("/usr/bin/checkupdates", "checkupdates", NULL) < 0) {
@@ -209,11 +212,11 @@ int perform_pacman_checkupdates() {
 		return -1;
 	} else {
 		if (!pipe_failed) {
-			run_syscall_print_w_act(close(out_fds[1]), ;, "WARNING", __FILE__, __LINE__);
+			run_syscall_print_err_w_act(close(out_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 		}
 
 		int checkupd_exit_stat;
-		run_syscall_print_w_act(waitpid(check_upd_child, &checkupd_exit_stat, 0), close(out_fds[0]); return -1;, "WARNING", __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(check_upd_child, &checkupd_exit_stat, 0), close(out_fds[0]); return -1;, warning_printf, __FILE__, __LINE__);
 
 		if (!pipe_failed && WEXITSTATUS(checkupd_exit_stat) == 0) {
 			streamed_content_t updates_output = stream_fd_content_alloc(out_fds[0]);
@@ -250,17 +253,17 @@ int perform_pacman_upgrade(int argc, char** argv) {
 		(void) fprintf(stderr, "\033[39;49m---\n");
 
 		if (execv("/usr/bin/sudo", exec_pars) < 0) {
-			(void) fprintf(stderr, "[NOTE] /usr/bin/sudo \033[31mexecution failed!\033[39;49m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" /usr/bin/sudo \033[31mexecution failed!\033[39;49m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return errno;
 		}
 		return -1;
 	} else if (check_upd_child == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
 		return -1;
 	} else {
 		int pacman_exit_stat;
-		run_syscall_print_err_w_ret_errno(waitpid(check_upd_child, &pacman_exit_stat, 0), __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(check_upd_child, &pacman_exit_stat, 0), return errno;, error_printf, __FILE__, __LINE__);
 
 		return WEXITSTATUS(pacman_exit_stat);
 	}
@@ -269,43 +272,43 @@ int perform_pacman_upgrade(int argc, char** argv) {
 int compare_versions(const char* ver1, const char* ver2) {
 	int vercmp_fds[2];
 
-	run_syscall_print_err_w_ret(pipe(vercmp_fds), 0, __FILE__, __LINE__);
+	run_syscall_print_err_w_act(pipe(vercmp_fds), return 0;, warning_printf, __FILE__, __LINE__);
 
 	int pacman_child = fork();
 
 	if (pacman_child == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
 		return 0;
 	} else if (pacman_child == 0) {
-		run_syscall_print_err_w_ret(close(vercmp_fds[0]), 0, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(dup2(vercmp_fds[1], STDOUT_FILENO), 0, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(close(vercmp_fds[1]), 0, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(vercmp_fds[0]), ;, warning_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(dup2(vercmp_fds[1], STDOUT_FILENO), (void) close(vercmp_fds[1]); _exit(EXIT_FAILURE); return 0;, error_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(vercmp_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
-		run_syscall_print_err_w_ret(execl("/usr/bin/vercmp", "vercmp", ver1, ver2, NULL), 0, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(execl("/usr/bin/vercmp", "vercmp", ver1, ver2, NULL), ;, error_printf, __FILE__, __LINE__);
 		_exit(EXIT_FAILURE);
 		return 0;
 	} else {
-		run_syscall_print_err_w_ret(close(vercmp_fds[1]), 0, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(vercmp_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
 		int exit_status;
-		run_syscall_print_err_w_ret(waitpid(pacman_child, &exit_status, 0), 0, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(pacman_child, &exit_status, 0), (void) close(vercmp_fds[0]); return 0;, error_printf, __FILE__, __LINE__);
 
 		int ret_code = WEXITSTATUS(exit_status);
 
 		if (!WIFEXITED(exit_status)) {
-			(void) fprintf(stderr, "[WARNING] pacman exited with code %d.\n", ret_code);
+			(void) warning_printf(" pacman exited with code %d.\n", ret_code);
 		}
 
 		char vercmp_out[21];
 		int n_txferred = read(vercmp_fds[0], vercmp_out, 21);
 
 		if (n_txferred == 0) {
-			(void) fprintf(stderr, "[WARNING] vercmp did not print anything");
+			(void) warning_printf(" vercmp did not print anything");
 			return 0;
 		}
 
 		if (n_txferred < 0) {
-			(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 8, strerror(errno));
+			(void) warning_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 8, strerror(errno));
 			return 0;
 		}
 
