@@ -29,7 +29,7 @@ pacman_names_vers_t* load_ver_cache() {
     int fd = open(pkg_ver_cache_file, O_RDONLY);
 	if (fd < 0) {
 		if (errno == ENOENT) {
-			(void) debug_printf(" '%s' does not exist - returning NULL to trigger creation of the file.", pkg_ver_cache_file);
+			(void) debug_printf(" '%s' does not exist - returning NULL to trigger creation of the file.\n", pkg_ver_cache_file);
 			return &ver_cache_loaded;
 		}
 		(void) error_printf(" \033[1;31mOpening %s failed\033[0m! - %s\n", pkg_ver_cache_file, strerror(errno));
