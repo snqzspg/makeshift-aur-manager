@@ -81,6 +81,7 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 
 			(void) fetch_pkg_base(pkgbase);
 		}
+		download_package_namelist();
 	}
 
 	if (action == FETCH /* PATCH */) {

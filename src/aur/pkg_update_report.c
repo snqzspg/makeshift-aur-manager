@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "../aur.h"
 #include "../file_utils.h"
 #include "../logger/logger.h"
 #include "../pacman.h"
@@ -109,4 +110,8 @@ void perform_updates_summary_report(char **pkg_namelist, size_t pkg_namelist_len
 	aur_check_non_git_downgrades(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
 	aur_list_git(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
 	(void) perform_pacman_checkupdates();
+
+	if (!does_pkglist_exist()) {
+		download_package_namelist();
+	}
 }
