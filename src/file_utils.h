@@ -13,4 +13,6 @@ void stream_fd_content_dealloc(streamed_content_t* s);
 
 int load_file_contents(char* __restrict__ dest, size_t limit, const char* path);
 
+int file_exists(const char* fname);
+
 #endif // FILE_UTILS_H_INCLUDED

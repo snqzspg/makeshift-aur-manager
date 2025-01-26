@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "file_utils.h"
@@ -117,4 +118,18 @@ int load_file_contents(char* __restrict__ dest, size_t limit, const char* path) 
 	}
 
 	return (int) total_file_size;
+}
+
+int file_exists(const char* fname) {
+    struct stat sb;
+
+    int r = stat(fname, &sb);
+    if (r >= 0) {
+        return 1;
+    }
+    if (errno == ENOENT) {
+        return 0;
+    }
+    (void) warning_perror("[file_exists] Error occured");
+    return 0;
 }
