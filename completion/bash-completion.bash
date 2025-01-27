@@ -44,12 +44,12 @@ __aurman_search_pkgs() {
 	if [ -z "$1" ] || [ ! -d "$completion_folder" ];
 	then
 		local aur_pkgnames="__pkg_cache__/aur_package_names.txt.gz"
-		COMPREPLY=($(compgen -W "$(zcat "$aur_pkgnames")" -- $1))
+		COMPREPLY=($(compgen -W "$(zcat "$aur_pkgnames")" -- "$1"))
 		return
 	fi
 	local firstc=${1:0:1}
 
-	COMPREPLY=($(compgen -W "$(zcat "$completion_folder/$firstc.txt.gz") -- $1"))
+	COMPREPLY=($(compgen -W "$(zcat "$completion_folder/$firstc.txt.gz")" -- "$1"))
 }
 
 __aurman_index_aur_pkg_completions() {
