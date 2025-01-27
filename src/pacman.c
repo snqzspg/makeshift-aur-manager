@@ -7,9 +7,12 @@
 #include <unistd.h>
 
 #include "file_utils.h"
+#include "hashtable.h"
 #include "logger/logger.h"
 #include "pacman.h"
 #include "unistd_helper.h"
+
+#include "aur/pkg_install_stages.h"
 
 char*  pacman_output      = NULL;
 size_t pacman_output_size = 0;
@@ -223,8 +226,12 @@ int perform_pacman_checkupdates() {
 
 			(void) write(STDOUT_FILENO,
 				"\n--- \033[1;34mPacman Updates\033[0m ---\n"
-				"\033[1;34mRun '\033[1;32msudo pacman -Syu\033[1;34m' (preferred) or use '\033[1;32mpacman-upgrade\033[1;34m' using this application to update.\033[0m\n\n"
-			, 168);
+				"\033[1;34mRun '\033[1;32msudo pacman -Syu\033[1;34m' (preferred) or use '\033[1;32m"
+			, 106);
+			(void) write(STDOUT_FILENO, exec_arg0, strlen(exec_arg0));
+			(void) write(STDOUT_FILENO,
+				" pacman-upgrade\033[1;34m' using this application to update.\033[0m\n\n"
+			, 63);
 			(void) write(STDOUT_FILENO, updates_output.content, updates_output.len);
 			(void) write(STDOUT_FILENO, "\n", 1);
 
