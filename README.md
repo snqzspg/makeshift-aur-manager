@@ -55,7 +55,11 @@ Firstly, clone this git repository.
 ```
 git clone https://github.com/snqzspg/makeshift-aur-manager.git
 ```
-Then, change directory into the repository and run 
+Then, change directory into the repository, and then run 
+```
+git submodule update --init
+```
+to fetch the [jsmn library](https://github.com/zserge/jsmn) used in this project. After that, run
 ```
 make
 ```
