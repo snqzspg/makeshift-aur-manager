@@ -221,7 +221,10 @@ int perform_pacman_checkupdates() {
 		if (!pipe_failed && WEXITSTATUS(checkupd_exit_stat) == 0) {
 			streamed_content_t updates_output = stream_fd_content_alloc(out_fds[0]);
 
-			(void) write(STDOUT_FILENO, "\n--- \033[1;34mPacman Updates\033[0m ---\n", 35);
+			(void) write(STDOUT_FILENO,
+				"\n--- \033[1;34mPacman Updates\033[0m ---\n"
+				"\033[1;34mRun '\033[1;32msudo pacman -Syu\033[1;34m' (preferred) or use '\033[1;32mpacman-upgrade\033[1;34m' using this application to update.\033[0m\n\n"
+			, 168);
 			(void) write(STDOUT_FILENO, updates_output.content, updates_output.len);
 			(void) write(STDOUT_FILENO, "\n", 1);
 

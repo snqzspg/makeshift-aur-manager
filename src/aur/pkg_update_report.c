@@ -10,6 +10,7 @@
 #include "../pacman.h"
 #include "../hashtable.h"
 #include "pkg_cache.h"
+#include "pkg_install_stages.h"
 
 #include "pkgver_cache.h"
 
@@ -26,7 +27,10 @@ void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t inst
 		}
 
 		if (!git_pkg_available)
-			(void) write(STDOUT_FILENO, "--- \033[1;36mAUR Git Packages\033[0m ---\n", 36);
+			(void) write(STDOUT_FILENO, 
+				"--- \033[1;36mAUR Git Packages\033[0m ---\n"
+				"\033[1;34mUse '\033[1;32maur-fetchgit\033[1;34m', inspect the \033[1;32mPKGBUILDs\033[1;34m, then use '\033[1;32maur-upgradegit\033[1;34m' to update.\033[0m\n\n"
+			, 170);
 			
 		git_pkg_available = 1;
 
@@ -67,7 +71,10 @@ void aur_check_non_git_downgrades(char **pkg_namelist, size_t pkg_namelist_len, 
 		}
 
 		if (!downgrade_present)
-			(void) write(STDOUT_FILENO, "--- \033[1;36mAUR \033[31mDowngrades\033[0m ---\n", 39);
+			(void) write(STDOUT_FILENO,
+				"--- \033[1;36mAUR \033[31mDowngrades\033[0m ---\n"
+				"\033[1;34mUse '\033[1;31maur-fetchdowngrades\033[1;34m', inspect the \033[1;32mPKGBUILDs\033[1;34m, then use \033[2m'\033[31maur-downgrade\033[34m' (WIP)\033[22;1m to downgrade.\033[0m\n\n"
+			, 195);
 
 		downgrade_present = 1;
 
@@ -91,7 +98,10 @@ void aur_check_non_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 		}
 
 		if (!upgrade_present) 
-			(void) write(STDOUT_FILENO, "--- \033[1;36mAUR Updates\033[0m ---\n", 31);
+			(void) write(STDOUT_FILENO,
+				"--- \033[1;36mAUR Updates\033[0m ---\n"
+				"\033[1;34mUse '\033[1;32maur-fetchupdates\033[1;34m', inspect the \033[1;32mPKGBUILDs\033[1;34m, then use '\033[1;32maur-upgrade\033[1;34m' to update.\033[0m\n\n"
+			, 166);
 
 		upgrade_present = 1;
 
