@@ -5,14 +5,18 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <zlib.h>
+
 #include "aur.h"
 #include "aur/pkg_cache.h"
+#include "completion/bash_completion.h"
 #include "file_utils.h"
 #include "logger/logger.h"
 #include "pacman.h"
 #include "hashtable.h"
 #include "subprocess_unix.h"
 #include "unistd_helper.h"
+#include "zlib_wrapper.h"
 
 #include "aur/pkg_install_stages.h"
 #include "aur/pkg_update_report.h"
@@ -75,6 +79,8 @@ void print_usage(const char* arg0) {
 	(void) fprintf(stderr, "    aur-fetchgit        - Performs git clone to updates for AUR packages that ends with '-git'.\n");
 	(void) fprintf(stderr, "    aur-buildgit        - Performs makepkg -s to updates for AUR packages that ends with '-git'.\n");
 	(void) fprintf(stderr, "    aur-upgradegit      - Uses pacman to updates for AUR packages that ends with '-git'.\n\n");
+	(void) fprintf(stderr, "The following is the command to generate completions for shells (currently only bash is available):\n");
+	(void) fprintf(stderr, "    gen-bashcomple      - Generates the bash completion script.\n\n");
 	(void) fprintf(stderr, "The help page is still a work in progress. More help documentation will be added in the future.\n");
 }
 
@@ -92,6 +98,9 @@ int main(int argc, char** argv) {
 		}
 		if (strcmp(argv[1], "pacman-upgrade") == 0) {
 			return perform_pacman_upgrade(argc - 2, argv + 2);
+		}
+		if (strcmp(argv[1], "gen-bashcomplete") == 0) {
+			return zputs(bash_completion_script_compressed, bash_completion_script_compressed_size) == Z_OK ? 0 : 1;
 		}
 		if (
 			strcmp(argv[1], "aur-fetchupdates")    == 0 ||

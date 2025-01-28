@@ -1,5 +1,5 @@
 _aurman_command_complete() {
-	local commands=('help pacman-checkupdates pacman-upgrade aur-fetchupdates aur-fetchdowngrades aur-fetchgit aur-buildupdates aur-builddowngrades aur-buildgit aur-upgrade aur-upgradegit aur-fetch aur-build aur-install')
+	local commands=('help pacman-checkupdates pacman-upgrade aur-fetchupdates aur-fetchdowngrades aur-fetchgit aur-buildupdates aur-builddowngrades aur-buildgit aur-upgrade aur-upgradegit aur-fetch aur-build aur-install gen-bashcomplete')
 	local word=$1
 	COMPREPLY=($(compgen -W "$commands" -- "$word"))
 }
