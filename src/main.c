@@ -7,6 +7,7 @@
 
 #include <zlib.h>
 
+#include "arg_parse/arg_commands.h"
 #include "aur.h"
 #include "aur/pkg_cache.h"
 #include "completion/bash_completion.h"
@@ -88,57 +89,132 @@ int main(int argc, char** argv) {
 	config_logging(DEBUG, isatty(STDOUT_FILENO));
 	fill_arg0(argv[0]);
 
-	if (argc > 1) {
-		if (strcmp(argv[1], "help") == 0) {
+	aurman_arg_command_t command = get_command(argc > 1 ? argv[1] : NULL);
+	int is_non_fetch = command != AUR_FETCH && command != AUR_FETCH_GIT && command != AUR_FETCH_UPDATES && command != AUR_FETCH_DOWNGRADES;
+
+	aur_upgrade_options_t upg_opts;
+	char *excluded_pkgs[argc];
+	if (parse_aur_update_args(&upg_opts, excluded_pkgs, argc, argc, argv, command) != 0) {
+		return EXIT_FAILURE;
+	}
+	if (upg_opts.n_exclude_pkgs > 1)
+		qsort(excluded_pkgs, upg_opts.n_exclude_pkgs, sizeof(char*), pkg_name_cmp);
+
+	if (is_non_fetch) {
+		upg_opts.reset_pkgbuilds = 0;
+	}
+
+	// https://stackoverflow.com/questions/11076941/warning-case-not-evaluated-in-enumerated-type
+	switch ((int) command) {
+		case HELP:
 			print_usage(argv[0]);
 			return EXIT_SUCCESS;
-		}
-		if (strcmp(argv[1], "pacman-checkupdates") == 0) {
+		
+		case PACMAN_CHECKUPDATES:
 			return perform_pacman_checkupdates();
-		}
-		if (strcmp(argv[1], "pacman-upgrade") == 0) {
+		case PACMAN_UPGRADE:
 			return perform_pacman_upgrade(argc - 2, argv + 2);
-		}
-		if (strcmp(argv[1], "gen-bashcomplete") == 0) {
+		case GEN_BASH_COMPLETION:
 			return zputs(bash_completion_script_compressed, bash_completion_script_compressed_size) == Z_OK ? 0 : 1;
-		}
-		if (
-			strcmp(argv[1], "aur-fetchupdates")    == 0 ||
-			strcmp(argv[1], "aur-fetchdowngrades") == 0 ||
-			strcmp(argv[1], "aur-fetchgit")        == 0 ||
-			strcmp(argv[1], "aur-buildupdates")    == 0 ||
-			strcmp(argv[1], "aur-builddowngrades") == 0 ||
-			strcmp(argv[1], "aur-buildgit")        == 0 ||
-			strcmp(argv[1], "aur-upgrade")         == 0 ||
-			strcmp(argv[1], "aur-upgradegit")      == 0
-		) {
-			// Checking argument validity before performing actual update fetching.
-			// This will exit the program immediately.
-			if (argc - 2 > 0) {
-				for (int i = 2, j = 0; i < argc; i += 2, j++) {
-					if (strcmp(argv[i], "--exclude") != 0) {
-						(void) error_printf("[aur-fetchupdates] Unrecognized option. Currently only supports --exclude.\n");
-						return 1;
-					}
 
-					if (i + 1 >= argc) {
-						(void) error_printf("[aur-fetchupdates] Missing operand for --exclude.\n");
-						return 1;
-					}
-				}
-			}
-		} else if (
-			strcmp(argv[1], "aur-fetch") == 0 || 
-			strcmp(argv[1], "aur-build") == 0 || 
-			strcmp(argv[1], "aur-install") == 0
-		) {
-			return pkg_list_manage_subseq(argv[1], argc - 2, argv + 2);
-		} else {
-			(void) error_printf(" Unknown option supplied.\n");
+		case UNKNOWN_COMMAND:
+			(void) error_printf(" Unknown command - %s\n", argv[1]);
 			print_usage(argv[0]);
 			return EXIT_FAILURE;
-		}
+
+		case AUR_FETCH:
+			return pkg_list_manage_subseq(argv[1], argc - 2, argv + 2, upg_opts.reset_pkgbuilds);
+		case AUR_BUILD:
+		case AUR_INSTALL:
+			return pkg_list_manage_subseq(argv[1], argc - 2, argv + 2, 0);
+
+		case UPDATES_SUMMARY:
+		case AUR_FETCH_UPDATES:
+		case AUR_BUILD_UPDATES:
+		case AUR_INSTALL_UPDATES:
+		case AUR_FETCH_DOWNGRADES:
+		case AUR_BUILD_DOWNGRADES:
+		// case AUR_INSTALL_DOWNGRADES:
+		case AUR_FETCH_GIT:
+		case AUR_BUILD_GIT:
+		case AUR_INSTALL_GIT:
+			break;
+
+		default:
+			(void) note_printf(" You've found a work in progress command.\n", argv[1]);
+			(void) note_printf(" The command '%s' is still a work-in-progress.\n", argv[1]);
+			return EXIT_FAILURE;
 	}
+
+	// if (argc > 1) {
+	// 	if (strcmp(argv[1], "help") == 0) {
+	// 		print_usage(argv[0]);
+	// 		return EXIT_SUCCESS;
+	// 	}
+	// 	if (strcmp(argv[1], "pacman-checkupdates") == 0) {
+	// 		return perform_pacman_checkupdates();
+	// 	}
+	// 	if (strcmp(argv[1], "pacman-upgrade") == 0) {
+	// 		return perform_pacman_upgrade(argc - 2, argv + 2);
+	// 	}
+	// 	if (strcmp(argv[1], "gen-bashcomplete") == 0) {
+	// 		return zputs(bash_completion_script_compressed, bash_completion_script_compressed_size) == Z_OK ? 0 : 1;
+	// 	}
+	// 	int is_aur_fet = strcmp(argv[1], "aur-fetchupdates") == 0;
+	// 	int is_git_fet = strcmp(argv[1], "aur-fetchgit")     == 0;
+	// 	if (is_aur_fet || is_git_fet) {
+	// 		// Checking argument validity before performing actual update fetching.
+	// 		// This will exit the program immediately.
+	// 		if (argc - 2 > 0) {
+	// 			for (int i = 2, j = 0; i < argc; i += 2, j++) {
+	// 				int is_exclude_opt = strcmp(argv[i], "--exclude") == 0;
+	// 				int is_reset_opt   = strcmp(argv[i], "--reset")   == 0;
+	// 				if (!is_exclude_opt && !is_reset_opt) {
+	// 					(void) error_printf("[aur-fetchupdates] Unrecognized option. %s currently only supports --exclude and --reset.\n", argv[1]);
+	// 					return 1;
+	// 				}
+
+	// 				if (is_exclude_opt && i + 1 >= argc) {
+	// 					(void) error_printf("[aur-fetchupdates] Missing operand for --exclude.\n");
+	// 					return 1;
+	// 				}
+	// 			}
+	// 		}
+	// 	} else if (
+	// 		strcmp(argv[1], "aur-fetchdowngrades") == 0 ||
+	// 		strcmp(argv[1], "aur-buildupdates")    == 0 ||
+	// 		strcmp(argv[1], "aur-builddowngrades") == 0 ||
+	// 		strcmp(argv[1], "aur-buildgit")        == 0 ||
+	// 		strcmp(argv[1], "aur-upgrade")         == 0 ||
+	// 		strcmp(argv[1], "aur-upgradegit")      == 0
+	// 	) {
+	// 		// Checking argument validity before performing actual update fetching.
+	// 		// This will exit the program immediately.
+	// 		if (argc - 2 > 0) {
+	// 			for (int i = 2, j = 0; i < argc; i += 2, j++) {
+	// 				if (strcmp(argv[i], "--exclude") != 0) {
+	// 					(void) error_printf("[aur-fetchupdates] Unrecognized option. Currently only supports --exclude.\n");
+	// 					return 1;
+	// 				}
+
+	// 				if (i + 1 >= argc) {
+	// 					(void) error_printf("[aur-fetchupdates] Missing operand for --exclude.\n");
+	// 					return 1;
+	// 				}
+	// 			}
+	// 		}
+	// 	} else if (
+	// 		strcmp(argv[1], "aur-fetch") == 0 || 
+	// 		strcmp(argv[1], "aur-build") == 0 || 
+	// 		strcmp(argv[1], "aur-install") == 0
+	// 	) {
+	// 		return pkg_list_manage_subseq(argv[1], argc - 2, argv + 2);
+	// 	} else {
+	// 		(void) error_printf(" Unknown option supplied.\n");
+	// 		print_usage(argv[0]);
+	// 		return EXIT_FAILURE;
+	// 	}
+	// }
 
 	pacman_names_vers_t installed_pkgs = get_installed_non_pacman();
 	char* pkg_namelist[installed_pkgs.n_items];
@@ -167,14 +243,14 @@ int main(int argc, char** argv) {
 		process_response_json(mutable_res_json, &installed_pkgs_dict);
 
 		if (argc > 1) {
-			char is_fetch_updates_selected    = strcmp(argv[1], "aur-fetchupdates")    == 0;
-			char is_fetch_downgrades_selected = strcmp(argv[1], "aur-fetchdowngrades") == 0;
-			char is_fetch_git_selected        = strcmp(argv[1], "aur-fetchgit")        == 0;
-			char is_build_updates_selected    = strcmp(argv[1], "aur-buildupdates")    == 0;
-			char is_build_downgrades_selected = strcmp(argv[1], "aur-builddowngrades") == 0;
-			char is_build_git_selected        = strcmp(argv[1], "aur-buildgit")        == 0;
-			char is_upgrade_selected          = strcmp(argv[1], "aur-upgrade")         == 0;
-			char is_upgrade_git_selected      = strcmp(argv[1], "aur-upgradegit")      == 0;
+			char is_fetch_updates_selected    = AUR_FETCH_UPDATES    == 0;
+			char is_fetch_downgrades_selected = AUR_FETCH_DOWNGRADES == 0;
+			char is_fetch_git_selected        = AUR_FETCH_GIT        == 0;
+			char is_build_updates_selected    = AUR_BUILD_UPDATES    == 0;
+			char is_build_downgrades_selected = AUR_BUILD_DOWNGRADES == 0;
+			char is_build_git_selected        = AUR_BUILD_GIT        == 0;
+			char is_upgrade_selected          = AUR_INSTALL_UPDATES  == 0;
+			char is_upgrade_git_selected      = AUR_INSTALL_GIT      == 0;
 
 			if (
 				is_fetch_updates_selected    ||
@@ -206,19 +282,19 @@ int main(int argc, char** argv) {
 					action = INSTALL;
 				}
 
-				if (argc - 2 > 0) {
-					int n_excludes = (argc - 2) / 2 + (((argc - 2) & 1) != 0);
-					char* excludes[n_excludes];
+				// if (argc - 2 > 0) {
+				// 	int n_excludes = (argc - 2) / 2 + (((argc - 2) & 1) != 0);
+				// 	char* excludes[n_excludes];
 
-					for (int i = 2, j = 0; i < argc; i += 2, j++) {
-						excludes[j] = argv[i + 1];
-					}
+				// 	for (int i = 2, j = 0; i < argc; i += 2, j++) {
+				// 		excludes[j] = argv[i + 1];
+				// 	}
 
-					qsort(excludes, n_excludes, sizeof(char*), pkg_name_cmp);
-					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excludes, n_excludes, NULL, 0, fetch_mode, action);
-				} else {
-					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, NULL, 0, NULL, 0, fetch_mode, action);
-				}
+				// 	qsort(excludes, n_excludes, sizeof(char*), pkg_name_cmp);
+				// 	aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excludes, n_excludes, NULL, 0, fetch_mode, action);
+				// } else {
+					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excluded_pkgs, upg_opts.n_exclude_pkgs, NULL, 0, fetch_mode, action, upg_opts.reset_pkgbuilds);
+				// }
 				clean_up_pacman_output();
 				return 0;
 			}

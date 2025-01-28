@@ -73,7 +73,7 @@ size_t filter_pkg_updates(char** __restrict__ filtered_list_out, size_t filtered
 	return pkg_count;
 }
 
-void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkgs_dict/* , enum __aur_fetch_mode fetch_type */, enum __aur_action action, char** pacman_opts, int n_pacman_opts) {
+void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkgs_dict, enum __aur_action action, char** pacman_opts, int n_pacman_opts, int reset) {
 	if (action == FETCH) {
 		for (size_t i = 0; i < pkg_count; i++) {
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkgs[i]);
@@ -279,20 +279,20 @@ size_t filter_aur_pkgs(char** __restrict__ pkgs_out, size_t n_pkgs_limit, char**
 	return pkgs_count;
 }
 
-void fetch_aur_pkgs_from_args(int argc, char** argv, hashtable_t pkgs_info) {
-	aur_perform_action(argv, argc, pkgs_info, FETCH, NULL, 0);
+void fetch_aur_pkgs_from_args(int argc, char** argv, hashtable_t pkgs_info, int reset) {
+	aur_perform_action(argv, argc, pkgs_info, FETCH, NULL, 0, reset);
 }
 
 void build_aur_pkgs_from_args(int argc, char** argv, hashtable_t pkgs_info) {
-	aur_perform_action(argv, argc, pkgs_info, BUILD, NULL, 0);
+	aur_perform_action(argv, argc, pkgs_info, BUILD, NULL, 0, 0);
 }
 
 void install_aur_pkgs_from_args(int argc, char** argv, hashtable_t pkgs_info, char** pacman_opts, int n_pacman_opts) {
 	// aur_perform_action(argv, argc, pkgs_info, BUILD, NULL, 0);
-	aur_perform_action(argv, argc, pkgs_info, INSTALL, pacman_opts, n_pacman_opts);
+	aur_perform_action(argv, argc, pkgs_info, INSTALL, pacman_opts, n_pacman_opts, 0);
 }
 
-int pkg_list_manage_subseq(const char* aur_cmd, int argc, char** argv) {
+int pkg_list_manage_subseq(const char* aur_cmd, int argc, char** argv, int fetch_resets_pkgs) {
 	size_t npkgs       = filter_pkgs_opts_args(NULL, 0, NULL, 0, argv, argc);
 	size_t npacmanopts = argc - npkgs;
 
@@ -323,7 +323,7 @@ int pkg_list_manage_subseq(const char* aur_cmd, int argc, char** argv) {
 		(void) filter_aur_pkgs(aur_pkgs, n_aur_pkgs, pkgs, npkgs, pkgs_info, 0);
 
 		if (strcmp(aur_cmd, "aur-fetch") == 0) {
-			fetch_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info);
+			fetch_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info, fetch_resets_pkgs);
 		}
 
 		if (strcmp(aur_cmd, "aur-build") == 0) {
@@ -340,12 +340,12 @@ int pkg_list_manage_subseq(const char* aur_cmd, int argc, char** argv) {
 	return 1;
 }
 
-void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, char **pacman_opts, size_t n_pacman_opts, enum __aur_fetch_mode fetch_type, enum __aur_action action) {
+void aur_fetch_updates(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, char **ignore_list, size_t ignore_list_len, char **pacman_opts, size_t n_pacman_opts, enum __aur_fetch_mode fetch_type, enum __aur_action action, int resets_pkgbuilds) {
 	size_t pkg_count = filter_pkg_updates(NULL, 0, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
 
 	char* filtered_list[pkg_count];
 
 	(void) filter_pkg_updates(filtered_list, pkg_count, pkg_namelist, pkg_namelist_len, installed_pkgs_dict, ignore_list, ignore_list_len, fetch_type);
 
-	aur_perform_action(filtered_list, pkg_count, installed_pkgs_dict, action, pacman_opts, n_pacman_opts);
+	aur_perform_action(filtered_list, pkg_count, installed_pkgs_dict, action, pacman_opts, n_pacman_opts, resets_pkgbuilds);
 }
