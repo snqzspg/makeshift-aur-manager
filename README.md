@@ -49,6 +49,7 @@ Ensure that you have GCC installed. You also need the following dependencies ins
  - less
  - pacman (obviously)
  - zlib
+ - python >= 3.9
 The above list was made quite last-minute, so I may have missed some out.
 
 Firstly, clone this git repository.
