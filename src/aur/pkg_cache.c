@@ -81,42 +81,42 @@ size_t write_pkg_file_path(char* __restrict__ dest, size_t limit, const char* pk
 	
 	int output_fds[2];
 
-	run_syscall_print_err_w_ret(pipe(output_fds), 0, __FILE__, __LINE__);
+	run_syscall_print_err_w_act(pipe(output_fds), return 0;, error_printf, __FILE__, __LINE__);
 
 	int makepkg_subprocess = fork();
 
 	if (makepkg_subprocess == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return 0;
 	} else if (makepkg_subprocess == 0) {
-		run_syscall_print_err_w_ret(close(output_fds[0]), 0, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(dup2(output_fds[1], STDOUT_FILENO), 0, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(close(output_fds[1]), 0, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(output_fds[0]), ;, warning_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(dup2(output_fds[1], STDOUT_FILENO), (void) close(output_fds[1]); return 0;, error_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(output_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
 		if (!quiet)
 			(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", pkgbase_path);
 
-		run_syscall_print_err_w_ret(chdir(pkgbase_path), 0, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(chdir(pkgbase_path), return 0;, error_printf, __FILE__, __LINE__);
 
 		if (!quiet)
 			(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg --packagelist\033[0m ---\n");
 
 		if (execl("/usr/bin/makepkg", "makepkg", "--packagelist", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return 0;
 		}
 
 		_exit(-1);
 		return 0;
 	} else {
-		run_syscall_print_err_w_ret(close(output_fds[1]), 0, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(output_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
 		int makepkg_stat;
-		run_syscall_print_err_w_ret(waitpid(makepkg_subprocess, &makepkg_stat, 0), 0, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), (void) close(output_fds[0]); return 0;, error_printf, __FILE__, __LINE__);
 
 		if (WEXITSTATUS(makepkg_stat) != 0) {
-			(void) fprintf(stderr, "[WARNING] makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
+			(void) warning_printf(" makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
 			return 0;
 		}
 	}
@@ -151,7 +151,7 @@ size_t write_pkg_file_path(char* __restrict__ dest, size_t limit, const char* pk
 
 	pkg_file_path_stash = (char*) malloc((toklen + 1) * sizeof(char));
 	if (pkg_file_path_stash == NULL) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
 		stream_fd_content_dealloc(&pkglist_stream);
 		return 0;
 	}
@@ -174,12 +174,12 @@ char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, cha
 	
 	int output_fds[2];
 
-	run_syscall_print_w_act(pipe(output_fds), return NULL;, "ERROR", __FILE__, __LINE__);
+	run_syscall_print_err_w_act(pipe(output_fds), return NULL;, error_printf, __FILE__, __LINE__);
 
 	int makepkg_subprocess = fork();
 
 	if (makepkg_subprocess == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return NULL;
 	} else if (makepkg_subprocess == 0) {
 		run_syscall_print_err_w_act(close(output_fds[0]), close(output_fds[1]); exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
@@ -203,10 +203,10 @@ char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, cha
 		_exit(-1);
 		return NULL;
 	} else {
-		run_syscall_print_w_act(close(output_fds[1]), close(output_fds[0]); return NULL;, "ERROR", __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(output_fds[1]), close(output_fds[0]); return NULL;, error_printf, __FILE__, __LINE__);
 
 		int makepkg_stat;
-		run_syscall_print_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), close(output_fds[0]); return NULL;, "ERROR", __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), close(output_fds[0]); return NULL;, error_printf, __FILE__, __LINE__);
 
 		if (WEXITSTATUS(makepkg_stat) != 0) {
 			(void) warning_printf(" makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
@@ -244,7 +244,7 @@ char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, cha
 
 	char* file_path = (char*) malloc((toklen + 1) * sizeof(char));
 	if (file_path == NULL) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
 		stream_fd_content_dealloc(&pkglist_stream);
 		return NULL;
 	}
@@ -303,24 +303,24 @@ int fetch_pkg_base(const char* pkg_base) {
 	int git_subprocess = fork();
 
 	if (git_subprocess == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return -1;
 	} else if (git_subprocess == 0) {
 		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/git clone %s %s\033[0m ---\n", fetch_url, dest);
 
 		if (execl("/usr/bin/git", "git", "clone", fetch_url, dest, NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return -1;
 		}
 
 		return -1;
 	} else {
 		int git_proc_stat;
-		run_syscall_print_err_w_ret(waitpid(git_subprocess, &git_proc_stat, 0), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(git_subprocess, &git_proc_stat, 0), return -1;, error_printf, __FILE__, __LINE__);
 
 		if (!WIFEXITED(git_proc_stat)) {
-			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			(void) warning_printf(" git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
 			return -1;
 		}
 
@@ -354,18 +354,18 @@ char is_pwd_git_repo() {
 	int git_subprocess = fork();
 
 	if (git_subprocess == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return 1;
 	} else if (git_subprocess == 0) {
 		int null_fd = open("/dev/null", O_WRONLY);
 
-		run_syscall_print_err_w_ret(dup2(null_fd, STDOUT_FILENO), -1, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(dup2(null_fd, STDERR_FILENO), -1, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(close(null_fd), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(dup2(null_fd, STDOUT_FILENO), ;, warning_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(dup2(null_fd, STDERR_FILENO), ;, warning_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(null_fd), ;, warning_printf, __FILE__, __LINE__);
 
 		if (execl("/usr/bin/git", "git", "status", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return -1;
 		}
 
@@ -408,18 +408,18 @@ int reset_pkg_base(const char* pkg_base) {
 	int git_subprocess = fork();
 
 	if (git_subprocess == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return -1;
 	} else if (git_subprocess == 0) {
 		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for git to %s\033[0m ---\n", dir);
 
-		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(chdir(dir), return -1;, error_printf, __FILE__, __LINE__);
 
 		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/git reset --hard\033[0m ---\n");
 
 		if (execl("/usr/bin/git", "git", "reset", "--hard", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return -1;
 		}
 
@@ -427,10 +427,10 @@ int reset_pkg_base(const char* pkg_base) {
 		return -1;
 	} else {
 		int git_proc_stat;
-		run_syscall_print_err_w_ret(waitpid(git_subprocess, &git_proc_stat, 0), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(git_subprocess, &git_proc_stat, 0), return -1;, error_printf, __FILE__, __LINE__);
 
 		if (!WIFEXITED(git_proc_stat)) {
-			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			(void) warning_printf(" git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
 			return -1;
 		}
 	}
@@ -438,18 +438,18 @@ int reset_pkg_base(const char* pkg_base) {
 	git_subprocess = fork();
 
 	if (git_subprocess == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return -1;
 	} else if (git_subprocess == 0) {
 		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for git to %s\033[0m ---\n", dir);
 
-		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(chdir(dir), return -1;, error_printf, __FILE__, __LINE__);
 
 		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/git clean -ffxd\033[0m ---\n");
 
 		if (execl("/usr/bin/git", "git", "clean", "-ffxd", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return -1;
 		}
 
@@ -457,10 +457,10 @@ int reset_pkg_base(const char* pkg_base) {
 		return -1;
 	} else {
 		int git_proc_stat;
-		run_syscall_print_err_w_ret(waitpid(git_subprocess, &git_proc_stat, 0), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(git_subprocess, &git_proc_stat, 0), return -1;, error_printf, __FILE__, __LINE__);
 
 		if (!WIFEXITED(git_proc_stat)) {
-			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			(void) warning_printf(" git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
 			return -1;
 		}
 	}
@@ -511,18 +511,18 @@ int update_existing_pkg_base(const char* pkg_base) {
 	int git_subprocess = fork();
 
 	if (git_subprocess == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return -1;
 	} else if (git_subprocess == 0) {
 		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for git to %s\033[0m ---\n", dir);
 
-		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(chdir(dir), return -1;, error_printf, __FILE__, __LINE__);
 
 		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/git fetch\033[0m ---\n");
 
 		if (execl("/usr/bin/git", "git", "fetch", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return -1;
 		}
 
@@ -530,10 +530,10 @@ int update_existing_pkg_base(const char* pkg_base) {
 		return -1;
 	} else {
 		int git_proc_stat;
-		run_syscall_print_err_w_ret(waitpid(git_subprocess, &git_proc_stat, 0), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(git_subprocess, &git_proc_stat, 0), return -1;, error_printf, __FILE__, __LINE__);
 
 		if (WEXITSTATUS(git_proc_stat) != 0) {
-			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			(void) warning_printf(" git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
 			return -1;
 		}
 	}
@@ -541,18 +541,18 @@ int update_existing_pkg_base(const char* pkg_base) {
 	git_subprocess = fork();
 
 	if (git_subprocess == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return -1;
 	} else if (git_subprocess == 0) {
 		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for git to %s\033[0m ---\n", dir);
 
-		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(chdir(dir), return -1;, error_printf, __FILE__, __LINE__);
 
 		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/git rebase\033[0m ---\n");
 
 		if (execl("/usr/bin/git", "git", "rebase", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/git execution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m/usr/bin/git execution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return -1;
 		}
 
@@ -560,10 +560,10 @@ int update_existing_pkg_base(const char* pkg_base) {
 		return -1;
 	} else {
 		int git_proc_stat;
-		run_syscall_print_err_w_ret(waitpid(git_subprocess, &git_proc_stat, 0), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(git_subprocess, &git_proc_stat, 0), return -1;, error_printf, __FILE__, __LINE__);
 
 		if (WEXITSTATUS(git_proc_stat) != 0) {
-			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
+			(void) warning_printf(" git exited with code %d.\n", WEXITSTATUS(git_proc_stat));
 			return -1;
 		}
 	}
@@ -583,18 +583,18 @@ int build_existing_pkg_base(const char* pkg_base) {
 	int makepkg_subprocess = fork();
 
 	if (makepkg_subprocess == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return -1;
 	} else if (makepkg_subprocess == 0) {
 		(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", dir);
 
-		run_syscall_print_err_w_ret(chdir(dir), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(chdir(dir), return -1;, error_printf, __FILE__, __LINE__);
 
 		(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg -s\033[0m ---\n");
 
 		if (execl("/usr/bin/makepkg", "makepkg", "-s", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return -1;
 		}
 
@@ -602,7 +602,7 @@ int build_existing_pkg_base(const char* pkg_base) {
 		return -1;
 	} else {
 		int makepkg_stat;
-		run_syscall_print_err_w_ret(waitpid(makepkg_subprocess, &makepkg_stat, 0), -1, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), return -1;, error_printf, __FILE__, __LINE__);
 
 		if (WEXITSTATUS(makepkg_stat) != 0) {
 			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(makepkg_stat));
@@ -636,42 +636,42 @@ char* extract_existing_pkg_base_ver(const char* pkg_base, char quiet) {
 
 	int output_fds[2];
 
-	run_syscall_print_err_w_ret(pipe(output_fds), NULL, __FILE__, __LINE__);
+	run_syscall_print_err_w_act(pipe(output_fds), return NULL;, error_printf, __FILE__, __LINE__);
 
 	int makepkg_subprocess = fork();
 
 	if (makepkg_subprocess == -1) {
-		(void) fprintf(stderr, "[ERROR][%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return NULL;
 	} else if (makepkg_subprocess == 0) {
-		run_syscall_print_err_w_ret(close(output_fds[0]), NULL, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(dup2(output_fds[1], STDOUT_FILENO), NULL, __FILE__, __LINE__);
-		run_syscall_print_err_w_ret(close(output_fds[1]), NULL, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(output_fds[0]), ;, warning_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(dup2(output_fds[1], STDOUT_FILENO), (void) close(output_fds[0]); return NULL;, error_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(output_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
 		if (!quiet)
 			(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", dir);
 
-		run_syscall_print_err_w_ret(chdir(dir), NULL, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(chdir(dir), return NULL;, error_printf, __FILE__, __LINE__);
 
 		if (!quiet)
 			(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg --printsrcinfo\033[0m ---\n");
 
 		if (execl("/usr/bin/makepkg", "makepkg", "--printsrcinfo", NULL) < 0) {
-			(void) fprintf(stderr, "[NOTE] \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
-			(void) fprintf(stderr, "[NOTE] %s\n", strerror(errno));
+			(void) note_printf(" \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
+			(void) note_printf(" %s\n", strerror(errno));
 			return NULL;
 		}
 
 		_exit(-1);
 		return NULL;
 	} else {
-		run_syscall_print_err_w_ret(close(output_fds[1]), NULL, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(output_fds[1]), return NULL;, error_printf, __FILE__, __LINE__);
 
 		int makepkg_stat;
-		run_syscall_print_err_w_ret(waitpid(makepkg_subprocess, &makepkg_stat, 0), NULL, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), return NULL;, error_printf, __FILE__, __LINE__);
 
 		if (WEXITSTATUS(makepkg_stat) != 0) {
-			(void) fprintf(stderr, "[WARNING] git exited with code %d.\n", WEXITSTATUS(makepkg_stat));
+			(void) warning_printf(" git exited with code %d.\n", WEXITSTATUS(makepkg_stat));
 			return NULL;
 		}
 	}
@@ -745,7 +745,7 @@ char* extract_existing_pkg_base_ver(const char* pkg_base, char quiet) {
 		extract_existing_ver_ret = (char*) realloc(extract_existing_ver_ret, (ver_s_len + 1) * sizeof(char));
 	}
 	if (extract_existing_ver_ret == NULL) {
-		perror("[ERROR][extract_existing_pkg_base_ver]");
+		error_perror("[extract_existing_pkg_base_ver]");
 		stream_fd_content_dealloc(&streamed_output);
 		return NULL;
 	}

@@ -36,7 +36,7 @@ int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_
 	}
 	int less_pipe_fds[2];
 
-	run_syscall_print_w_act(pipe(less_pipe_fds), return -1;, "ERROR", __FILE__, __LINE__);
+	run_syscall_print_err_w_act(pipe(less_pipe_fds), return -1;, error_printf, __FILE__, __LINE__);
 
 	int aur_upd_child = fork();
 
@@ -46,18 +46,18 @@ int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_
 		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
 		return -1;
 	} else if (aur_upd_child == 0) {
-		run_syscall_print_w_act(close(less_pipe_fds[0]), ;, "WARNING", __FILE__, __LINE__);
-		run_syscall_print_w_act(dup2(less_pipe_fds[1], STDOUT_FILENO), (void) close(less_pipe_fds[1]); return -1;, "ERROR", __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(less_pipe_fds[0]), ;, warning_printf, __FILE__, __LINE__);
+		run_syscall_print_err_w_act(dup2(less_pipe_fds[1], STDOUT_FILENO), (void) close(less_pipe_fds[1]); return -1;, error_printf, __FILE__, __LINE__);
 		setvbuf(stdout, NULL, _IONBF, 0);
 
 		perform_updates_summary_report(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
 
-		run_syscall_print_w_act(close(less_pipe_fds[1]), ;, "WARNING", __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(less_pipe_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
 		_exit(0);
 		return 0;
 	} else {
-		run_syscall_print_w_act(close(less_pipe_fds[1]), ;, "WARNING", __FILE__, __LINE__);
+		run_syscall_print_err_w_act(close(less_pipe_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
 		(void) waitpid(aur_upd_child, NULL, 0);
 
