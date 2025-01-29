@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "../arg_parse/arg_commands.h"
 #include "../aur.h"
 #include "../file_utils.h"
 #include "../logger/logger.h"
@@ -292,24 +293,29 @@ void install_aur_pkgs_from_args(int argc, char** argv, hashtable_t pkgs_info, ch
 	aur_perform_action(argv, argc, pkgs_info, INSTALL, pacman_opts, n_pacman_opts, 0);
 }
 
-int pkg_list_manage_subseq(const char* aur_cmd, int argc, char** argv, int fetch_resets_pkgs) {
-	size_t npkgs       = filter_pkgs_opts_args(NULL, 0, NULL, 0, argv, argc);
-	size_t npacmanopts = argc - npkgs;
+int pkg_list_manage_subseq(aurman_arg_command_t command, int argc, char** argv) {
+	// size_t npkgs       = filter_pkgs_opts_args(NULL, 0, NULL, 0, argv, argc);
+	// size_t npacmanopts = argc - npkgs;
 
-	char* pkgs[npkgs];
-	char* pacman_opts[npacmanopts == 0 ? 1 : npacmanopts];
+	aur_install_options_t ins_opts;
+	char* pkgs[argc];
+	char* pacman_opts[argc];
 
-	(void) filter_pkgs_opts_args(pkgs, npkgs, npacmanopts == 0 ? NULL : pacman_opts, npacmanopts, argv, argc);
+	if (parse_aur_install_args(&ins_opts, pkgs, argc, pacman_opts, argc, argc, argv, command) != 0) {
+		return 1;
+	}
+
+	// (void) filter_pkgs_opts_args(pkgs, npkgs, npacmanopts == 0 ? NULL : pacman_opts, npacmanopts, argv, argc);
 
 	struct hashtable_node* map  [argc];
 	struct hashtable_node  stash[argc];
 	hashtable_t pkgs_info = hashtable_init(map, argc, stash, argc);
 
-	for (size_t i = 0; i < npkgs; i++) {
+	for (size_t i = 0; i < ins_opts.n_pkgs; i++) {
 		hashtable_set_item(&pkgs_info, pkgs[i], NULL, NULL, 1);
 	}
 
-	const char* response_json = get_packages_info((const char* const*) pkgs, npkgs);
+	const char* response_json = get_packages_info((const char* const*) pkgs, ins_opts.n_pkgs);
 	if (response_json != NULL) {
 		size_t res_json_len = strlen(response_json);
 		char mutable_res_json[res_json_len + 1];
@@ -318,21 +324,34 @@ int pkg_list_manage_subseq(const char* aur_cmd, int argc, char** argv, int fetch
 
 		process_response_json(mutable_res_json, &pkgs_info);
 
-		size_t n_aur_pkgs = filter_aur_pkgs(NULL, 0, pkgs, npkgs, pkgs_info, 1);
+		size_t n_aur_pkgs = filter_aur_pkgs(NULL, 0, pkgs, ins_opts.n_pkgs, pkgs_info, 1);
 		char* aur_pkgs[n_aur_pkgs];
-		(void) filter_aur_pkgs(aur_pkgs, n_aur_pkgs, pkgs, npkgs, pkgs_info, 0);
+		(void) filter_aur_pkgs(aur_pkgs, n_aur_pkgs, pkgs, ins_opts.n_pkgs, pkgs_info, 0);
 
-		if (strcmp(aur_cmd, "aur-fetch") == 0) {
-			fetch_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info, fetch_resets_pkgs);
+		// https://stackoverflow.com/questions/11076941/warning-case-not-evaluated-in-enumerated-type
+		switch ((int) command) {
+			case AUR_FETCH:
+				fetch_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info, ins_opts.reset_pkgbuilds);
+				break;
+			case AUR_BUILD:
+				build_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info);
+				break;
+			case AUR_INSTALL:
+				install_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info, pacman_opts, ins_opts.n_pacman_opts);
+				break;
 		}
 
-		if (strcmp(aur_cmd, "aur-build") == 0) {
-			build_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info);
-		}
+		// if (strcmp(aur_cmd, "aur-fetch") == 0) {
+		// 	fetch_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info, fetch_resets_pkgs);
+		// }
 
-		if (strcmp(aur_cmd, "aur-install") == 0) {
-			install_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info, pacman_opts, npacmanopts);
-		}
+		// if (strcmp(aur_cmd, "aur-build") == 0) {
+		// 	build_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info);
+		// }
+
+		// if (strcmp(aur_cmd, "aur-install") == 0) {
+		// 	install_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info, pacman_opts, npacmanopts);
+		// }
 
 		return 0;
 	}

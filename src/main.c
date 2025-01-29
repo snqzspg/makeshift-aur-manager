@@ -92,18 +92,6 @@ int main(int argc, char** argv) {
 	aurman_arg_command_t command = get_command(argc > 1 ? argv[1] : NULL);
 	int is_non_fetch = command != AUR_FETCH && command != AUR_FETCH_GIT && command != AUR_FETCH_UPDATES && command != AUR_FETCH_DOWNGRADES;
 
-	aur_upgrade_options_t upg_opts;
-	char *excluded_pkgs[argc];
-	if (parse_aur_update_args(&upg_opts, excluded_pkgs, argc, argc, argv, command) != 0) {
-		return EXIT_FAILURE;
-	}
-	if (upg_opts.n_exclude_pkgs > 1)
-		qsort(excluded_pkgs, upg_opts.n_exclude_pkgs, sizeof(char*), pkg_name_cmp);
-
-	if (is_non_fetch) {
-		upg_opts.reset_pkgbuilds = 0;
-	}
-
 	// https://stackoverflow.com/questions/11076941/warning-case-not-evaluated-in-enumerated-type
 	switch ((int) command) {
 		case HELP:
@@ -123,10 +111,9 @@ int main(int argc, char** argv) {
 			return EXIT_FAILURE;
 
 		case AUR_FETCH:
-			return pkg_list_manage_subseq(argv[1], argc - 2, argv + 2, upg_opts.reset_pkgbuilds);
 		case AUR_BUILD:
 		case AUR_INSTALL:
-			return pkg_list_manage_subseq(argv[1], argc - 2, argv + 2, 0);
+			return pkg_list_manage_subseq(command, argc, argv);
 
 		case UPDATES_SUMMARY:
 		case AUR_FETCH_UPDATES:
@@ -144,6 +131,19 @@ int main(int argc, char** argv) {
 			(void) note_printf(" You've found a work in progress command.\n", argv[1]);
 			(void) note_printf(" The command '%s' is still a work-in-progress.\n", argv[1]);
 			return EXIT_FAILURE;
+	}
+
+	aur_upgrade_options_t upg_opts;
+	char *excluded_pkgs[argc];
+	char *pacman_opts[argc];
+	if (parse_aur_update_args(&upg_opts, excluded_pkgs, argc, pacman_opts, argc, argc, argv, command) != 0) {
+		return EXIT_FAILURE;
+	}
+	if (upg_opts.n_exclude_pkgs > 1)
+		qsort(excluded_pkgs, upg_opts.n_exclude_pkgs, sizeof(char*), pkg_name_cmp);
+
+	if (is_non_fetch) {
+		upg_opts.reset_pkgbuilds = 0;
 	}
 
 	// if (argc > 1) {
@@ -243,14 +243,14 @@ int main(int argc, char** argv) {
 		process_response_json(mutable_res_json, &installed_pkgs_dict);
 
 		if (argc > 1) {
-			char is_fetch_updates_selected    = AUR_FETCH_UPDATES    == 0;
-			char is_fetch_downgrades_selected = AUR_FETCH_DOWNGRADES == 0;
-			char is_fetch_git_selected        = AUR_FETCH_GIT        == 0;
-			char is_build_updates_selected    = AUR_BUILD_UPDATES    == 0;
-			char is_build_downgrades_selected = AUR_BUILD_DOWNGRADES == 0;
-			char is_build_git_selected        = AUR_BUILD_GIT        == 0;
-			char is_upgrade_selected          = AUR_INSTALL_UPDATES  == 0;
-			char is_upgrade_git_selected      = AUR_INSTALL_GIT      == 0;
+			char is_fetch_updates_selected    = AUR_FETCH_UPDATES    == command;
+			char is_fetch_downgrades_selected = AUR_FETCH_DOWNGRADES == command;
+			char is_fetch_git_selected        = AUR_FETCH_GIT        == command;
+			char is_build_updates_selected    = AUR_BUILD_UPDATES    == command;
+			char is_build_downgrades_selected = AUR_BUILD_DOWNGRADES == command;
+			char is_build_git_selected        = AUR_BUILD_GIT        == command;
+			char is_upgrade_selected          = AUR_INSTALL_UPDATES  == command;
+			char is_upgrade_git_selected      = AUR_INSTALL_GIT      == command;
 
 			if (
 				is_fetch_updates_selected    ||
@@ -293,7 +293,7 @@ int main(int argc, char** argv) {
 				// 	qsort(excludes, n_excludes, sizeof(char*), pkg_name_cmp);
 				// 	aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excludes, n_excludes, NULL, 0, fetch_mode, action);
 				// } else {
-					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excluded_pkgs, upg_opts.n_exclude_pkgs, NULL, 0, fetch_mode, action, upg_opts.reset_pkgbuilds);
+					aur_fetch_updates(pkg_namelist, actual_namelist_size, installed_pkgs_dict, excluded_pkgs, upg_opts.n_exclude_pkgs, pacman_opts, upg_opts.n_pacman_opts, fetch_mode, action, upg_opts.reset_pkgbuilds);
 				// }
 				clean_up_pacman_output();
 				return 0;

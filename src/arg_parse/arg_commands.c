@@ -83,17 +83,69 @@ aurman_arg_command_t get_command(const char* arg1) {
 	return UNKNOWN_COMMAND;
 }
 
-int parse_aur_update_args(aur_upgrade_options_t* __restrict__ opts_out, char** __restrict__ exclude_pkgs, int excpkg_limit, int argc, char** argv, aurman_arg_command_t command) {
+static int is_pacman_arg(const char* arg) {
+	if (strcmp(arg, "--asdeps") == 0) {
+		return 1;
+	}
+
+	if (strcmp(arg, "--asexplicit") == 0) {
+		return 1;
+	}
+
+	if (strcmp(arg, "--needed") == 0) {
+		return 1;
+	}
+
+	if (strcmp(arg, "--noconfirm") == 0) {
+		return 1;
+	}
+
+	if (strcmp(arg, "--confirm") == 0) {
+		return 1;
+	}
+
+	if (strcmp(arg, "--noprogressbar") == 0) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int parse_aur_update_args(aur_upgrade_options_t* __restrict__ opts_out, char** __restrict__ exclude_pkgs, int excpkg_limit, char** __restrict__ pacman_opts, int pacman_opts_limit, int argc, char** argv, aurman_arg_command_t command) {
 	opts_out -> exclude_pkgs    = exclude_pkgs;
 	opts_out -> n_exclude_pkgs  = 0;
+	opts_out -> pacman_opts     = pacman_opts;
+	opts_out -> n_pacman_opts   = 0;
 	opts_out -> reset_pkgbuilds = 0;
 	for (int i = 2; i < argc; i++) {
+		// https://stackoverflow.com/questions/11076941/warning-case-not-evaluated-in-enumerated-type
+		switch ((int) command) {
+			case AUR_INSTALL_UPDATES:
+			case AUR_INSTALL_DOWNGRADES:
+			case AUR_INSTALL_GIT:
+				if (is_pacman_arg(argv[i])) {
+					if (pacman_opts != NULL && opts_out -> n_pacman_opts < pacman_opts_limit) {
+						pacman_opts[opts_out -> n_pacman_opts] = argv[i];
+					}
+					opts_out -> n_pacman_opts++;
+					continue;
+				}
+		}
+
+		// if (argv[i][0] != '-') {
+		// 	continue;
+		// }
+
+		if (strcmp(argv[i], "--") == 0) {
+			break;
+		}
+
 		if (strcmp(argv[i], "--exclude") == 0) {
 			if (i + 1 >= argc) {
 				(void) error_printf("[%s] Missing operand for --exclude.\n", argv[1]);
 				return 1;
 			}
-			if (exclude_pkgs != NULL) {
+			if (exclude_pkgs != NULL && opts_out -> n_exclude_pkgs < excpkg_limit) {
 				exclude_pkgs[opts_out -> n_exclude_pkgs] = argv[i + 1];
 			}
 			(void) i++;
@@ -103,17 +155,63 @@ int parse_aur_update_args(aur_upgrade_options_t* __restrict__ opts_out, char** _
 
 		// https://stackoverflow.com/questions/11076941/warning-case-not-evaluated-in-enumerated-type
 		switch ((int) command) {
-			case AUR_FETCH:
 			case AUR_FETCH_UPDATES:
 			case AUR_FETCH_DOWNGRADES:
 			case AUR_FETCH_GIT:
 				if (strcmp(argv[i], "--reset") == 0) {
-					opts_out -> reset_pkgbuilds = 0;
+					opts_out -> reset_pkgbuilds = 1;
 					continue;
 				}
+				(void) error_printf("[%s] Unrecognized option '%s'. Currently only supports --exclude and --reset.\n", argv[1], argv[i]);
+				return 1;
 		}
 
-		(void) error_printf("[%s] Unrecognized option. Currently only supports --exclude.\n", argv[1]);
+		(void) error_printf("[%s] Unrecognized option '%s'. Currently only supports --exclude.\n", argv[1], argv[i]);
+		return 1;
+	}
+
+	return 0;
+}
+
+
+int parse_aur_install_args(aur_install_options_t* __restrict__ opts_out, char** __restrict__ pkgs, int pkg_limit, char** __restrict__ pacman_opts, int pacman_opts_limit, int argc, char** argv, aurman_arg_command_t command) {
+	opts_out -> pkgs            = pkgs;
+	opts_out -> n_pkgs          = 0;
+	opts_out -> pacman_opts     = pacman_opts;
+	opts_out -> n_pacman_opts   = 0;
+	opts_out -> reset_pkgbuilds = 0;
+	for (int i = 2; i < argc; i++) {
+		if (command == AUR_INSTALL && is_pacman_arg(argv[i])) {
+			if (pacman_opts != NULL && opts_out -> n_pacman_opts < pacman_opts_limit) {
+				pacman_opts[opts_out -> n_pacman_opts] = argv[i];
+			}
+			opts_out -> n_pacman_opts++;
+			continue;
+		}
+
+		if (argv[i][0] != '-') {
+			if (pkgs != NULL && opts_out -> n_pkgs < pkg_limit) {
+				pkgs[opts_out -> n_pkgs] = argv[i];
+			}
+			opts_out -> n_pkgs++;
+			continue;
+		}
+
+		if (strcmp(argv[i], "--") == 0) {
+			break;
+		}
+
+		// https://stackoverflow.com/questions/11076941/warning-case-not-evaluated-in-enumerated-type
+		if (command == AUR_FETCH) {
+			if (strcmp(argv[i], "--reset") == 0) {
+				opts_out -> reset_pkgbuilds = 1;
+				continue;
+			}
+			(void) error_printf("[%s] Unrecognized option '%s'. Currently only supports --reset.\n", argv[1], argv[i]);
+			return 1;
+		}
+
+		(void) error_printf("[%s] Unrecognized option '%s'. Currently supports no options.\n", argv[1], argv[i]);
 		return 1;
 	}
 
