@@ -22,6 +22,12 @@ void git_clone_aur_pkgs(char** pkg_bases, size_t n_pkg_bases);
  */
 void git_reset_aur_pkgs(char** pkg_bases, size_t n_pkg_bases);
 
+/**
+ * WARNING: A potentially destructive function when tested inside
+ *          a git repo!!
+ */
+int update_existing_pkg_base(const char* pkg_base);
+
 int build_existing_pkg_base(const char* pkg_base);
 void build_aur_pkgs(char** pkg_bases, size_t n_pkg_bases);
 

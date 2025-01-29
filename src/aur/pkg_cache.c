@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -6,6 +8,7 @@
 #include <string.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -386,7 +389,7 @@ char is_pwd_git_repo() {
  */
 int reset_pkg_base(const char* pkg_base) {
 	if (is_pwd_git_repo()) {
-		(void) write(STDERR_FILENO, 
+		(void) syscall(SYS_write, STDERR_FILENO, 
 			"--- \033[1;31mGIT RESET PACKAGE ABORTED\033[0m!!! ---\n"
 			"This process involves \"git reset --hard\" and \"git clean -ffxd\", both are \033[1;31mdestructive git commands\033[0m.\n"
 			"The present working directory (pwd) is detected to be a git repository. To avoid losing unstaged changes, this process is being aborted.\n"

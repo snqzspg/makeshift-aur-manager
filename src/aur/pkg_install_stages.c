@@ -1,8 +1,11 @@
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 #include "../arg_parse/arg_commands.h"
@@ -80,13 +83,20 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkgs[i]);
 			char* pkgbase = found_node -> package_base == NULL ? pkgs[i] : found_node -> package_base;
 
+			if (reset) {
+				int r = update_existing_pkg_base(pkgbase);
+				if (r != 0) {
+					(void) syscall(SYS_exit, EXIT_FAILURE);
+					return;
+				}
+			}
 			(void) fetch_pkg_base(pkgbase);
 		}
 		download_package_namelist();
 	}
 
 	if (action == FETCH /* PATCH */) {
-		// if (fetch_type == GIT) {
+		if (!reset) {
 			pacman_name_ver_t git_pkgs[pkg_count];
 			char* new_ver_strs[pkg_count];
 			(void) memset(new_ver_strs, 0, pkg_count * sizeof(char*));
@@ -123,7 +133,7 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 			for (size_t i = 0; i < git_pkgs_count; i++) {
 				free(new_ver_strs[i]);
 			}
-		// }
+		}
 	}
 
 	if (action >= BUILD) {
