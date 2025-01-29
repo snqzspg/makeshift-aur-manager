@@ -80,6 +80,13 @@ aurman_arg_command_t get_command(const char* arg1) {
 	if (strcmp(arg1, "aur-upgradegit") == 0) {
 		return AUR_INSTALL_GIT;
 	}
+
+	if (strcmp(arg1, "pacman-checkupdates") == 0) {
+		return PACMAN_CHECKUPDATES;
+	}
+	if (strcmp(arg1, "pacman-upgrade") == 0) {
+		return PACMAN_UPGRADE;
+	}
 	return UNKNOWN_COMMAND;
 }
 
