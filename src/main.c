@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
 		case AUR_INSTALL_UPDATES:
 		case AUR_FETCH_DOWNGRADES:
 		case AUR_BUILD_DOWNGRADES:
-		// case AUR_INSTALL_DOWNGRADES:
+		case AUR_INSTALL_DOWNGRADES:
 		case AUR_FETCH_GIT:
 		case AUR_BUILD_GIT:
 		case AUR_INSTALL_GIT:
