@@ -80,6 +80,9 @@ void print_usage(const char* arg0) {
 	(void) fprintf(stderr, "    aur-fetchgit        - Performs git clone to updates for AUR packages that ends with '-git'.\n");
 	(void) fprintf(stderr, "    aur-buildgit        - Performs makepkg -s to updates for AUR packages that ends with '-git'.\n");
 	(void) fprintf(stderr, "    aur-upgradegit      - Uses pacman to updates for AUR packages that ends with '-git'.\n\n");
+	(void) fprintf(stderr, "    aur-fetch           - Git clones specified packages from AUR.\n\n");
+	(void) fprintf(stderr, "    aur-build           - Build specified packages from AUR.\n\n");
+	(void) fprintf(stderr, "    aur-install         - Installs specified packages from AUR.\n\n");
 	(void) fprintf(stderr, "The following is the command to generate completions for shells (currently only bash is available):\n");
 	(void) fprintf(stderr, "    gen-bashcomple      - Generates the bash completion script.\n\n");
 	(void) fprintf(stderr, "The help page is still a work in progress. More help documentation will be added in the future.\n");
