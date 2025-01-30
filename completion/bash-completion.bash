@@ -39,13 +39,7 @@ __aurman() {
 				__aurman_upgrade_fetch_opts ${COMP_WORDS[COMP_CWORD]}  ${COMP_WORDS[COMP_CWORD - 1]}
 			;;
 
-			"aur-buildupdates")
-				__aurman_upgrade_opts ${COMP_WORDS[COMP_CWORD]}  ${COMP_WORDS[COMP_CWORD - 1]}
-			;;
-			"aur-buildgit")
-				__aurman_upgrade_opts ${COMP_WORDS[COMP_CWORD]}  ${COMP_WORDS[COMP_CWORD - 1]}
-			;;
-			"aur-builddowngrades")
+			"aur-buildupdates" | "aur-buildgit" | "aur-builddowngrades")
 				__aurman_upgrade_opts ${COMP_WORDS[COMP_CWORD]}  ${COMP_WORDS[COMP_CWORD - 1]}
 			;;
 
