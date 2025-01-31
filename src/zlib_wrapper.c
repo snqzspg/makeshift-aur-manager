@@ -1,8 +1,11 @@
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h>
 #include <zlib.h>
 
 #include "logger/logger.h"
@@ -62,7 +65,7 @@ int zputs(const char* compressed_string, int s_size) {
 		}
 
 		int inflated_size = inflate_chunk_size - strm.avail_out;
-		int written_size  = fwrite(out, sizeof(char), inflated_size, stdout);
+		long written_size  = syscall(SYS_write, STDOUT_FILENO, out, inflated_size * sizeof(char));
 		if (written_size < 0) {
 			(void) error_perror(" Writing to stdout failed");
 			free(in);
