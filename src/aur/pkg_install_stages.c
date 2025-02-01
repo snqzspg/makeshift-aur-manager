@@ -188,7 +188,6 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 				continue;
 			}
 
-			// (void) fprintf(stderr, "[DEBUG] This package would be at \033[1;33m%s\033[0m.\n", pkg_file);
 			(void) debug_printf(" This package would be at \033[1;33m%s\033[0m.\n", pkg_file);
 
 			pacman_args[pacman_args_count++] = pkg_file;
@@ -196,7 +195,6 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 
 		pacman_args[pacman_args_count] = NULL;
 
-		// (void) fprintf(stderr, "[INFO] Use the command \033[1;32m");
 		(void) info_printf(" Use the command \033[1;32m");
 		if (is_logging_type_enabled(INFO)) {
 			for (size_t i = 0; i < pacman_args_count; i++) {
@@ -212,63 +210,6 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 			free(pacman_args[i]);
 		}
 	}
-}
-
-int pacman_args_n(const char* arg) {
-	if (strcmp(arg, "--asdeps") == 0) {
-		return 1;
-	}
-
-	if (strcmp(arg, "--asexplicit") == 0) {
-		return 1;
-	}
-
-	if (strcmp(arg, "--needed") == 0) {
-		return 1;
-	}
-
-	if (strcmp(arg, "--noconfirm") == 0) {
-		return 1;
-	}
-
-	if (strcmp(arg, "--confirm") == 0) {
-		return 1;
-	}
-
-	if (strcmp(arg, "--noprogressbar") == 0) {
-		return 1;
-	}
-
-	return 0;
-}
-
-size_t filter_pkgs_opts_args(char** __restrict__ pkgs_out, size_t n_pkgs_limit, char** __restrict__ pacman_opts_out, size_t n_pacman_opts, char** argv, int argc) {
-	size_t pkgs_count, opts_count;
-	pkgs_count = 0;
-	opts_count = 0;
-
-	for (int i = 0; i < argc; i++) {
-		int n_pacman_opts = pacman_args_n(argv[i]);
-
-		if (n_pacman_opts) {
-			for (int j = 0; j < n_pacman_opts; j++) {
-				if (opts_count < n_pacman_opts && pacman_opts_out != NULL) {
-					pacman_opts_out[opts_count + j] = argv[i + j];
-				}
-			}
-			opts_count += n_pacman_opts;
-			i += n_pacman_opts - 1;
-		} else {
-			if (pkgs_count < n_pkgs_limit && pkgs_out != NULL) {
-				pkgs_out[pkgs_count] = argv[i];
-			}
-			pkgs_count++;
-		}
-	}
-
-	assert(pkgs_count + opts_count == argc);
-
-	return pkgs_count;
 }
 
 size_t filter_aur_pkgs(char** __restrict__ pkgs_out, size_t n_pkgs_limit, char** pkgs_in, size_t n_pkgs_in, hashtable_t pkgs_info, int quiet) {
@@ -350,18 +291,6 @@ int pkg_list_manage_subseq(aurman_arg_command_t command, int argc, char** argv) 
 				install_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info, pacman_opts, ins_opts.n_pacman_opts);
 				break;
 		}
-
-		// if (strcmp(aur_cmd, "aur-fetch") == 0) {
-		// 	fetch_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info, fetch_resets_pkgs);
-		// }
-
-		// if (strcmp(aur_cmd, "aur-build") == 0) {
-		// 	build_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info);
-		// }
-
-		// if (strcmp(aur_cmd, "aur-install") == 0) {
-		// 	install_aur_pkgs_from_args(n_aur_pkgs, aur_pkgs, pkgs_info, pacman_opts, npacmanopts);
-		// }
 
 		return 0;
 	}
