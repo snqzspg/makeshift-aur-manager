@@ -66,9 +66,6 @@ size_t filter_pkg_updates(char** __restrict__ filtered_list_out, size_t filtered
 
 		if (pkg_count < filtered_list_limit && filtered_list_out != NULL) {
 			filtered_list_out[pkg_count] = pkg_namelist[i];
-			// filtered_list_out[pkg_count].name    = pkg_namelist[i];
-			// filtered_list_out[pkg_count].valid   = 1;
-			// filtered_list_out[pkg_count].version = found_node -> updated_ver;
 		}
 
 		pkg_count++;
