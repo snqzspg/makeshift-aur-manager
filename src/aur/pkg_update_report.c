@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "../arg_parse/arg_commands.h"
 #include "../aur.h"
 #include "../file_utils.h"
 #include "../logger/logger.h"
