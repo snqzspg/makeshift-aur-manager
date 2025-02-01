@@ -9,6 +9,7 @@
 
 #include <curl/curl.h>
 
+#include "aur/pkg_cache.h"
 #include "file_utils.h"
 #include "logger/logger.h"
 
@@ -120,7 +121,6 @@ int does_pkglist_exist() {
 	return file_exists(aur_pkglist_file_compressed);
 }
 
-
 /**
  * Inefficient in terms of a lot of I/O operations.
  */
@@ -134,6 +134,7 @@ int download_package_namelist() {
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_pkgs_gz);
 
 	(void) debug_printf(" Creating file '%s'.\n", aur_pkglist_file_compressed);
+	create_pkg_cache();
 	int pkg_namelist_fd = open(aur_pkglist_file_compressed, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	if (pkg_namelist_fd < 0) {
 		(void) error_printf("[Updating package names] Creating file '%s' failed!\n", aur_pkglist_file_compressed);
