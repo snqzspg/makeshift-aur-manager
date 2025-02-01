@@ -17,6 +17,17 @@
 
 #include "pkg_update_report.h"
 
+static void print_aur_pkgnames_completion_status() {
+	if (does_pkglist_exist()) {
+		return;
+	}
+
+	(void) printf(
+		"Package names command line completions are not downloaded. "
+		"You can run '\033[1;32m%s aur-fetch\033[0m' or any fetch commands to download the list.\n\n"
+	, exec_arg0);
+}
+
 void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict) {
 	int git_pkg_available = 0;
 	pacman_names_vers_t* ver_cache = load_ver_cache();
@@ -117,12 +128,13 @@ void aur_check_non_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 }
 
 void perform_updates_summary_report(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict) {
+	print_aur_pkgnames_completion_status();
 	aur_check_non_git(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
 	aur_check_non_git_downgrades(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
 	aur_list_git(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
 	(void) perform_pacman_checkupdates();
 
-	if (!does_pkglist_exist()) {
-		download_package_namelist();
-	}
+	// if (!does_pkglist_exist()) {
+	// 	download_package_namelist();
+	// }
 }
