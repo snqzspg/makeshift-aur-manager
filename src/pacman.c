@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "arg_parse/arg_commands.h"
 #include "file_utils.h"
 #include "hashtable.h"
 #include "logger/logger.h"
