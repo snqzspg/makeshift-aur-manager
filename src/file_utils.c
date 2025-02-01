@@ -172,7 +172,7 @@ struct linux_dirent {
 	char           d_name[];
 };
 
-#define RDIR_FRAG_SIZE 256
+#define RDIR_FRAG_SIZE 4096
 
 /**
  * A very Linux specific method to get all files for a directory.
