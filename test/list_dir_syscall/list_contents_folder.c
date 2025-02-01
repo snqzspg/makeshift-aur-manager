@@ -21,11 +21,11 @@ int alph_cmp(const void* a, const void* b) {
 
 #define RDIR_FRAG_SIZE 256
 
-size_t write_dir_filenames(char** dest, size_t* len_outs, char* is_dir_outs, size_t dest_limit, const char* folder) {
+size_t write_dir_filenames(char** dest, size_t* len_outs, char* is_dir_outs, size_t dest_limit, const char* folder, int recursive) {
 	int fd = open(folder, O_RDONLY | O_DIRECTORY);
 
 	if (fd == -1) {
-		(void) fprintf(stderr, "[ERROR] \033[1;31mOpening %s failed\033[0m! - %s\n", folder, strerror(errno));
+		(void) fprintf(stderr, "[\033[1;31mERROR\033[0m] Opening %s failed! - %s\n", folder, strerror(errno));
 		return 0;
 	}
 
@@ -34,26 +34,50 @@ size_t write_dir_filenames(char** dest, size_t* len_outs, char* is_dir_outs, siz
 
 	for (long n_read = syscall(SYS_getdents, fd, fragment, RDIR_FRAG_SIZE); n_read != 0; n_read = syscall(SYS_getdents, fd, fragment, RDIR_FRAG_SIZE)) {
 		if (n_read == -1) {
-			perror("[ERROR][getdents]");
+			perror("[\033[1;31mERROR\033[0m][getdents]");
 			return 0;
 		}
 
 		for (int bpos = 0; bpos < n_read;) {
 			struct linux_dirent* d = (struct linux_dirent*) (fragment + bpos);
+			int d_type = *(fragment + bpos + d -> d_reclen - 1);
+			int is_dir = d_type == DT_DIR;
+
+			bpos += d -> d_reclen;
+
+			size_t fpath_len = snprintf(NULL, 0, "%s/%s", folder, d -> d_name);
+			char fpath[fpath_len + 1];
+			(void) snprintf(fpath, fpath_len + 1, "%s/%s", folder, d -> d_name);
+
+			if (recursive && (strcmp(d -> d_name, ".") == 0 || strcmp(d -> d_name, "..") == 0)) {
+				continue;
+			}
+
+			if (recursive && is_dir) {
+				char**  dest1        = dest        == NULL || dest_limit < n_entries ? NULL : dest        + n_entries;
+				size_t* len_outs1    = len_outs    == NULL || dest_limit < n_entries ? NULL : len_outs    + n_entries;
+				char*   is_dir_outs1 = is_dir_outs == NULL || dest_limit < n_entries ? NULL : is_dir_outs + n_entries;
+				n_entries += write_dir_filenames(dest1, len_outs1, is_dir_outs1, dest_limit <= n_entries? 0 : dest_limit - n_entries, fpath, 1);
+				continue;
+			}
+
+			if (d_type != DT_REG) {
+				continue;
+			}
+
 			if (n_entries < dest_limit) {
 				if (is_dir_outs != NULL) {
-					is_dir_outs[n_entries] = *(fragment + bpos + d -> d_reclen - 1) == DT_DIR;
+					is_dir_outs[n_entries] = is_dir;
 				}
 
 				if (len_outs != NULL) {
-					len_outs[n_entries] = strlen(d -> d_name);
+					len_outs[n_entries] = fpath_len;
 				}
 
 				if (dest != NULL) {
-					(void) strncpy(dest[n_entries], d -> d_name, strlen(d -> d_name) + 1);
+					(void) strncpy(dest[n_entries], fpath, fpath_len + 1);
 				}
 			}
-			bpos += d -> d_reclen;
 			n_entries++;
 		}
 	}
@@ -70,13 +94,13 @@ size_t write_dir_filenames(char** dest, size_t* len_outs, char* is_dir_outs, siz
 int main(int argc, char** argv) {
 	char* fdr = argc > 1 ? argv[1] : ".";
 
-	size_t n_entries = write_dir_filenames(NULL, NULL, NULL, 0, fdr);
-	(void) printf("%zu\n", n_entries);
+	size_t n_entries = write_dir_filenames(NULL, NULL, NULL, 0, fdr, 1);
+	(void) fprintf(stderr, "[\033[1;33mDEBUG\033[0m] %zu\n", n_entries);
 
 	char is_dir_bools[n_entries];
 	size_t fn_lens[n_entries];
 
-	(void) write_dir_filenames(NULL, fn_lens, is_dir_bools, n_entries, fdr);
+	(void) write_dir_filenames(NULL, fn_lens, is_dir_bools, n_entries, fdr, 1);
 
 	size_t total_len_alloc = 0;
 	for (size_t i = 0; i < n_entries; i++) {
@@ -91,7 +115,7 @@ int main(int argc, char** argv) {
 		j += fn_lens[i] + 1;
 	}
 
-	(void) write_dir_filenames(dirnames, fn_lens, is_dir_bools, n_entries, fdr);
+	(void) write_dir_filenames(dirnames, fn_lens, is_dir_bools, n_entries, fdr, 1);
 
 	for (size_t i = 0; i < n_entries; i++) {
 		(void) printf("%s%s%s\n", is_dir_bools[i] ? "\033[1;34m" : "", dirnames[i], is_dir_bools[i] ? "\033[0m" : "");
