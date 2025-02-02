@@ -153,8 +153,8 @@ int main(int argc, char** argv) {
 	char* pkg_namelist[installed_pkgs.n_items];
 	size_t actual_namelist_size = 0;
 
-	int   pacman_output_fd;
-	pid_t pacman_proc = perform_pacman_checkupdates_bg(&pacman_output_fd);
+	int   pacman_output_fd = -1;
+	pid_t pacman_proc = command == UPDATES_SUMMARY ? perform_pacman_checkupdates_bg(&pacman_output_fd) : -1;
 
 	struct hashtable_node* map  [installed_pkgs.n_items];
 	struct hashtable_node  stash[installed_pkgs.n_items];
@@ -171,7 +171,8 @@ int main(int argc, char** argv) {
 	const char* response_json = get_packages_info((const char* const*) pkg_namelist, actual_namelist_size);
 
 	int pacman_checkupd_stat;
-	(void) waitpid(pacman_proc, &pacman_checkupd_stat, 0);
+	if (pacman_proc > 0)
+		(void) waitpid(pacman_proc, &pacman_checkupd_stat, 0);
 
 	if (response_json != NULL) {
 		size_t res_json_len = strlen(response_json);

@@ -9,6 +9,7 @@ typedef struct {
 extern streamed_content_t STR_CT_NULL_RET;
 
 streamed_content_t stream_fd_content_alloc(int fd);
+char* stream_fd_content_detach_str(streamed_content_t* s);
 void stream_fd_content_dealloc(streamed_content_t* s);
 
 int load_file_contents(char* __restrict__ dest, size_t limit, const char* path);

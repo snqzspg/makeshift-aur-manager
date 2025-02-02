@@ -79,6 +79,13 @@ streamed_content_t stream_fd_content_alloc(int fd) {
 	};
 }
 
+char* stream_fd_content_detach_str(streamed_content_t* s) {
+	char* r = s -> content;
+	s -> content = NULL;
+	s -> len     = 0;
+	return r;
+}
+
 void stream_fd_content_dealloc(streamed_content_t* s) {
 	free(s -> content);
 	s -> content = NULL;
