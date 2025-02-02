@@ -13,6 +13,7 @@
 #include "../pacman.h"
 #include "../hashtable.h"
 #include "pkg_cache.h"
+#include "pkg_info.h"
 #include "pkg_install_stages.h"
 
 #include "pkgver_cache.h"
@@ -49,6 +50,7 @@ void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t inst
 		git_pkg_available = 1;
 
 		char* revised_updated_ver = found_node -> updated_ver;
+		int need_to_free_ver_str  = 0;
 
 		if (j < ver_cache -> n_items) {
 			while (strcmp(pkg_namelist[i], ver_cache -> pkg_names_vers[j].name) > 0 && j < ver_cache -> n_items) {
@@ -56,11 +58,13 @@ void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t inst
 			}
 			if (strcmp(pkg_namelist[i], ver_cache -> pkg_names_vers[j].name) == 0) {
 				revised_updated_ver = ver_cache -> pkg_names_vers[j].version;
+				need_to_free_ver_str = 0;
 			} else {
-				revised_updated_ver = extract_existing_pkg_base_ver(found_node -> package_base, 0);
+				revised_updated_ver = get_pkgbase_ver_alloc(found_node -> package_base);
 				if (revised_updated_ver == NULL) {
 					revised_updated_ver = found_node -> updated_ver;
 				}
+				need_to_free_ver_str = 1;
 			}
 		}
 
@@ -70,8 +74,10 @@ void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t inst
 		char *col   = revised_update_type == UPGRADE ? "\033[32m" : (revised_update_type == DOWNGRADE ? "\033[31m" : "\033[2m");
 		char *arrow = revised_update_type == UPGRADE ? "->" : (revised_update_type == DOWNGRADE ? "<-" : "==");
 		(void) printf("%s %s\033[1m%s\033[0m %s %s\033[1m%s\033[0m\n", pkg_namelist[i], col, found_node -> installed_ver, arrow, col, revised_updated_ver);
+		if (need_to_free_ver_str)
+			free(revised_updated_ver);
 	}
-	clean_up_extract_existing_pkg_base_ver();
+	// clean_up_extract_existing_pkg_base_ver();
 	discard_ver_cache();
 }
 

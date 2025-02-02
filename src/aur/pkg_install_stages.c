@@ -19,6 +19,7 @@
 #include "../aur_pkg_parse.h"
 
 #include "pkg_cache.h"
+#include "pkg_info.h"
 #include "pkgver_cache.h"
 
 #include "pkg_install_stages.h"
@@ -113,11 +114,12 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 				git_pkgs[git_pkgs_count].version = found_node -> updated_ver;
 
 				update_existing_git_pkg_base(pkgbase);
-				char* v = extract_existing_pkg_base_ver(pkgbase, 0);
+				char* v = get_pkgbase_ver_alloc(pkgbase);
+				new_ver_strs[git_pkgs_count] = v;
 				if (v != NULL) {
-					new_ver_strs[git_pkgs_count] = (char*) malloc((strlen(v) + 1) * sizeof(char));
-					(void) strncpy(new_ver_strs[git_pkgs_count], v, strlen(v) + 1);
-					v = new_ver_strs[git_pkgs_count];
+					// new_ver_strs[git_pkgs_count] = (char*) malloc((strlen(v) + 1) * sizeof(char));
+					// (void) strncpy(new_ver_strs[git_pkgs_count], v, strlen(v) + 1);
+					// v = new_ver_strs[git_pkgs_count];
 					git_pkgs[git_pkgs_count].version = v;
 				}
 				git_pkgs_count++;
@@ -180,7 +182,7 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 			struct hashtable_node* found_node = hashtable_find_inside_map(installed_pkgs_dict, pkgs[i]);
 			char* pkgbase = found_node -> package_base == NULL ? pkgs[i] : found_node -> package_base;
 
-			char* pkg_file = pkg_file_path_stream_alloc(pkgs[i], pkgbase, 0);
+			char* pkg_file = get_pkg_file_from_pkg_alloc(pkgs[i], pkgbase);
 			if (pkg_file == NULL) {
 				continue;
 			}
