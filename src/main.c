@@ -28,10 +28,10 @@ static int pkg_name_cmp(const void* a, const void* b) {
 	return strcmp(*((char* const*) a), *((char* const*) b));
 }
 
-int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict) {
+int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, int pacman_output_fd) {
 	if (!isatty(STDOUT_FILENO)) {
 		setvbuf(stdout, NULL, _IONBF, 0);
-		perform_updates_summary_report(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
+		perform_updates_summary_report(pkg_namelist, pkg_namelist_len, installed_pkgs_dict, pacman_output_fd);
 		return 0;
 	}
 	int less_pipe_fds[2];
@@ -50,7 +50,7 @@ int aur_check_less_wrap(char **pkg_namelist, size_t pkg_namelist_len, hashtable_
 		run_syscall_print_err_w_act(dup2(less_pipe_fds[1], STDOUT_FILENO), (void) close(less_pipe_fds[1]); return -1;, error_printf, __FILE__, __LINE__);
 		setvbuf(stdout, NULL, _IONBF, 0);
 
-		perform_updates_summary_report(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
+		perform_updates_summary_report(pkg_namelist, pkg_namelist_len, installed_pkgs_dict, pacman_output_fd);
 
 		run_syscall_print_err_w_act(close(less_pipe_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
@@ -153,6 +153,9 @@ int main(int argc, char** argv) {
 	char* pkg_namelist[installed_pkgs.n_items];
 	size_t actual_namelist_size = 0;
 
+	int   pacman_output_fd;
+	pid_t pacman_proc = perform_pacman_checkupdates_bg(&pacman_output_fd);
+
 	struct hashtable_node* map  [installed_pkgs.n_items];
 	struct hashtable_node  stash[installed_pkgs.n_items];
 	hashtable_t installed_pkgs_dict = hashtable_init(map, installed_pkgs.n_items, stash, installed_pkgs.n_items);
@@ -166,6 +169,9 @@ int main(int argc, char** argv) {
 	}
 
 	const char* response_json = get_packages_info((const char* const*) pkg_namelist, actual_namelist_size);
+
+	int pacman_checkupd_stat;
+	(void) waitpid(pacman_proc, &pacman_checkupd_stat, 0);
 
 	if (response_json != NULL) {
 		size_t res_json_len = strlen(response_json);
@@ -235,9 +241,9 @@ int main(int argc, char** argv) {
 
 		// Need to repeat here inside the if statement or else
 		// the updated version names gets deallocated.
-		(void) aur_check_less_wrap(pkg_namelist, actual_namelist_size, installed_pkgs_dict);
+		(void) aur_check_less_wrap(pkg_namelist, actual_namelist_size, installed_pkgs_dict, WEXITSTATUS(pacman_checkupd_stat) == 0 ? pacman_output_fd : -1);
 	} else {
-		(void) aur_check_less_wrap(pkg_namelist, actual_namelist_size, installed_pkgs_dict);
+		(void) aur_check_less_wrap(pkg_namelist, actual_namelist_size, installed_pkgs_dict, WEXITSTATUS(pacman_checkupd_stat) == 0 ? pacman_output_fd : -1);
 	}
 
 	// aur_check_non_git(pkg_namelist, actual_namelist_size, installed_pkgs_dict);

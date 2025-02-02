@@ -11,6 +11,7 @@
 #include "hashtable.h"
 #include "logger/logger.h"
 #include "pacman.h"
+#include "subprocess_unix.h"
 #include "unistd_helper.h"
 
 #include "aur/pkg_install_stages.h"
@@ -241,6 +242,33 @@ int perform_pacman_checkupdates() {
 
 		return WEXITSTATUS(checkupd_exit_stat);
 	}
+}
+
+pid_t perform_pacman_checkupdates_bg(int* __restrict__ output_fd) {
+	return run_subprocess(NULL, 1, 0, output_fd, STDIN_FILENO, NULL, "/usr/bin/checkupdates", "checkupdates", NULL);
+}
+
+int perform_pacman_checkupdates_bg_follow_up(int output_fd) {
+	if (output_fd > 0) {
+		streamed_content_t updates_output = stream_fd_content_alloc(output_fd);
+
+		(void) write(STDOUT_FILENO,
+			"\n--- \033[1;34mPacman Updates\033[0m ---\n"
+			"\033[1;34mRun '\033[1;32msudo pacman -Syu\033[1;34m' (preferred) or use '\033[1;32m"
+		, 106);
+		(void) write(STDOUT_FILENO, exec_arg0, strlen(exec_arg0));
+		(void) write(STDOUT_FILENO,
+			" pacman-upgrade\033[1;34m' using this application to update.\033[0m\n\n"
+		, 63);
+		(void) write(STDOUT_FILENO, updates_output.content, updates_output.len);
+		(void) write(STDOUT_FILENO, "\n", 1);
+
+		stream_fd_content_dealloc(&updates_output);
+
+		run_syscall_print_err_w_act(close(output_fd), ;, warning_printf, __FILE__, __LINE__);
+	}
+
+	return 0;
 }
 
 int perform_pacman_upgrade(int argc, char** argv) {

@@ -129,14 +129,11 @@ void aur_check_non_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t
 		(void) write(STDOUT_FILENO, "\n", 1);
 }
 
-void perform_updates_summary_report(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict) {
+void perform_updates_summary_report(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t installed_pkgs_dict, int pacman_output_fd) {
 	print_aur_pkgnames_completion_status();
 	aur_check_non_git(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
 	aur_check_non_git_downgrades(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
 	aur_list_git(pkg_namelist, pkg_namelist_len, installed_pkgs_dict);
-	(void) perform_pacman_checkupdates();
-
-	// if (!does_pkglist_exist()) {
-	// 	download_package_namelist();
-	// }
+	// (void) perform_pacman_checkupdates();
+	(void) perform_pacman_checkupdates_bg_follow_up(pacman_output_fd);
 }
