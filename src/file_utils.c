@@ -188,10 +188,13 @@ struct linux_dirent {
  * @return The number of entries inside this folder.
  */
 size_t write_dir_filenames(char** dest, size_t* len_outs, char* is_dir_outs, size_t dest_limit, const char* folder, int recursive) {
-	int fd = open(folder, O_RDONLY | O_DIRECTORY);
+	int         folder_is_blank   = folder == NULL || *folder == '\0';
+	const char* folder_to_syscall = folder_is_blank ? "." : folder;
+
+	int fd = open(folder_to_syscall, O_RDONLY | O_DIRECTORY);
 
 	if (fd == -1) {
-		(void) error_printf(" Opening %s failed!: %s\n", folder, strerror(errno));
+		(void) fprintf(stderr, "[\033[1;31mERROR\033[0m] Opening %s failed! - %s\n", folder_to_syscall, strerror(errno));
 		return 0;
 	}
 
@@ -200,7 +203,7 @@ size_t write_dir_filenames(char** dest, size_t* len_outs, char* is_dir_outs, siz
 
 	for (long n_read = syscall(SYS_getdents, fd, fragment, RDIR_FRAG_SIZE); n_read != 0; n_read = syscall(SYS_getdents, fd, fragment, RDIR_FRAG_SIZE)) {
 		if (n_read == -1) {
-			error_perror("[getdents]");
+			perror("[\033[1;31mERROR\033[0m][getdents]");
 			return 0;
 		}
 
@@ -212,8 +215,10 @@ size_t write_dir_filenames(char** dest, size_t* len_outs, char* is_dir_outs, siz
 			bpos += d -> d_reclen;
 
 			size_t fpath_len = snprintf(NULL, 0, "%s/%s", folder, d -> d_name);
-			char fpath[fpath_len + 1];
-			(void) snprintf(fpath, fpath_len + 1, "%s/%s", folder, d -> d_name);
+			char fpath_buffer[fpath_len + 1];
+			(void) snprintf(fpath_buffer, fpath_len + 1, "%s/%s", folder, d -> d_name);
+
+			char* fpath = folder_is_blank ? d -> d_name : fpath_buffer;
 
 			if (recursive && (strcmp(d -> d_name, ".") == 0 || strcmp(d -> d_name, "..") == 0)) {
 				continue;
