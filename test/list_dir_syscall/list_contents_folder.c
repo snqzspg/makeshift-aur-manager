@@ -54,7 +54,7 @@ size_t write_dir_filenames(char** dest, size_t* len_outs, char* is_dir_outs, siz
 
 			char* fpath = folder_is_blank ? d -> d_name : fpath_buffer;
 
-			if (recursive && (strcmp(d -> d_name, ".") == 0 || strcmp(d -> d_name, "..") == 0)) {
+			if (recursive && (strcmp(d -> d_name, ".") == 0 || strcmp(d -> d_name, "..") == 0 || strcmp(d -> d_name, ".git") == 0)) {
 				continue;
 			}
 
