@@ -4,6 +4,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <alpm.h>
+
 #include "../arg_parse/arg_commands.h"
 #include "../aur.h"
 #include "../file_utils.h"
@@ -62,7 +64,7 @@ void aur_list_git(char **pkg_namelist, size_t pkg_namelist_len, hashtable_t inst
 			}
 		}
 
-		int  vercmp = compare_versions(found_node -> installed_ver, revised_updated_ver);
+		int  vercmp = alpm_pkg_vercmp(found_node -> installed_ver, revised_updated_ver);
 		enum update_stat revised_update_type = vercmp == 0 ? UP_TO_DATE : (vercmp < 0 ? UPGRADE : DOWNGRADE);
 
 		char *col   = revised_update_type == UPGRADE ? "\033[32m" : (revised_update_type == DOWNGRADE ? "\033[31m" : "\033[2m");

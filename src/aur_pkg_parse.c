@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <alpm.h>
 #include <jsmn.h>
 
 #include "logger/logger.h"
 #include "hashtable.h"
-#include "pacman.h"
 
 #include "aur_pkg_parse.h"
 
@@ -111,7 +111,7 @@ jsmntok_t* find_and_update_pkg_info(char* mutable_json_str, hashtable_t* map, js
 	if (node -> installed_ver == NULL) {
 		node -> update_type = UPGRADE;
 	} else {
-		int vercmp = compare_versions(node -> installed_ver, node -> updated_ver);
+		int vercmp = alpm_pkg_vercmp(node -> installed_ver, node -> updated_ver);
 		node -> update_type = vercmp == 0 ? UP_TO_DATE : (vercmp < 0 ? UPGRADE : DOWNGRADE);
 	}
 

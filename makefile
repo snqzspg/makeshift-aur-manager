@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -Wpedantic -I lib/jsmn -g
 LD=gcc
-LDFLAGS=-lcurl -lz 
+LDFLAGS=-lcurl -lz -lalpm 
 
 exec_out=bin/aur_man
 src_files=src/arg_parse/arg_commands.c src/aur/pkg_cache.c src/aur/pkg_install_stages.c src/aur/pkg_update_report.c src/aur/pkgver_cache.c src/logger/logger.c src/aur_pkg_parse.c src/aur.c src/file_utils.c src/hashtable.c src/pacman.c src/subprocess_unix.c src/zlib_wrapper.c src/main.c

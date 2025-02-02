@@ -25,6 +25,6 @@ void clean_up_pacman_output(void);
 int perform_pacman_checkupdates();
 int perform_pacman_upgrade(int argc, char** argv);
 
-int compare_versions(const char* ver1, const char* ver2);
+// int compare_versions(const char* ver1, const char* ver2);
 
 #endif // PACMAN_H_INCLUDED

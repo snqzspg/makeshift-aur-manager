@@ -280,55 +280,55 @@ int perform_pacman_upgrade(int argc, char** argv) {
 	}
 }
 
-int compare_versions(const char* ver1, const char* ver2) {
-	int vercmp_fds[2];
+// int compare_versions(const char* ver1, const char* ver2) {
+// 	int vercmp_fds[2];
 
-	run_syscall_print_err_w_act(pipe(vercmp_fds), return 0;, warning_printf, __FILE__, __LINE__);
+// 	run_syscall_print_err_w_act(pipe(vercmp_fds), return 0;, warning_printf, __FILE__, __LINE__);
 
-	int pacman_child = fork();
+// 	int pacman_child = fork();
 
-	if (pacman_child == -1) {
-		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
-		return 0;
-	} else if (pacman_child == 0) {
-		run_syscall_print_err_w_act(close(vercmp_fds[0]), ;, warning_printf, __FILE__, __LINE__);
-		run_syscall_print_err_w_act(dup2(vercmp_fds[1], STDOUT_FILENO), (void) close(vercmp_fds[1]); _exit(EXIT_FAILURE); return 0;, error_printf, __FILE__, __LINE__);
-		run_syscall_print_err_w_act(close(vercmp_fds[1]), ;, warning_printf, __FILE__, __LINE__);
+// 	if (pacman_child == -1) {
+// 		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 1, strerror(errno));
+// 		return 0;
+// 	} else if (pacman_child == 0) {
+// 		run_syscall_print_err_w_act(close(vercmp_fds[0]), ;, warning_printf, __FILE__, __LINE__);
+// 		run_syscall_print_err_w_act(dup2(vercmp_fds[1], STDOUT_FILENO), (void) close(vercmp_fds[1]); _exit(EXIT_FAILURE); return 0;, error_printf, __FILE__, __LINE__);
+// 		run_syscall_print_err_w_act(close(vercmp_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
-		run_syscall_print_err_w_act(execl("/usr/bin/vercmp", "vercmp", ver1, ver2, NULL), ;, error_printf, __FILE__, __LINE__);
-		_exit(EXIT_FAILURE);
-		return 0;
-	} else {
-		run_syscall_print_err_w_act(close(vercmp_fds[1]), ;, warning_printf, __FILE__, __LINE__);
+// 		run_syscall_print_err_w_act(execl("/usr/bin/vercmp", "vercmp", ver1, ver2, NULL), ;, error_printf, __FILE__, __LINE__);
+// 		_exit(EXIT_FAILURE);
+// 		return 0;
+// 	} else {
+// 		run_syscall_print_err_w_act(close(vercmp_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
-		int exit_status;
-		run_syscall_print_err_w_act(waitpid(pacman_child, &exit_status, 0), (void) close(vercmp_fds[0]); return 0;, error_printf, __FILE__, __LINE__);
+// 		int exit_status;
+// 		run_syscall_print_err_w_act(waitpid(pacman_child, &exit_status, 0), (void) close(vercmp_fds[0]); return 0;, error_printf, __FILE__, __LINE__);
 
-		int ret_code = WEXITSTATUS(exit_status);
+// 		int ret_code = WEXITSTATUS(exit_status);
 
-		if (!WIFEXITED(exit_status)) {
-			(void) warning_printf(" pacman exited with code %d.\n", ret_code);
-		}
+// 		if (!WIFEXITED(exit_status)) {
+// 			(void) warning_printf(" pacman exited with code %d.\n", ret_code);
+// 		}
 
-		char vercmp_out[21];
-		int n_txferred = read(vercmp_fds[0], vercmp_out, 21);
+// 		char vercmp_out[21];
+// 		int n_txferred = read(vercmp_fds[0], vercmp_out, 21);
 
-		if (n_txferred == 0) {
-			(void) warning_printf(" vercmp did not print anything");
-			return 0;
-		}
+// 		if (n_txferred == 0) {
+// 			(void) warning_printf(" vercmp did not print anything");
+// 			return 0;
+// 		}
 
-		if (n_txferred < 0) {
-			(void) warning_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 8, strerror(errno));
-			return 0;
-		}
+// 		if (n_txferred < 0) {
+// 			(void) warning_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 8, strerror(errno));
+// 			return 0;
+// 		}
 
-		if (n_txferred < 21) {
-			vercmp_out[n_txferred] = '\0';
-		} else {
-			vercmp_out[20] = '\0';
-		}
+// 		if (n_txferred < 21) {
+// 			vercmp_out[n_txferred] = '\0';
+// 		} else {
+// 			vercmp_out[20] = '\0';
+// 		}
 
-		return atoi(vercmp_out);
-	}
-}
+// 		return atoi(vercmp_out);
+// 	}
+// }
