@@ -53,205 +53,205 @@ size_t write_pkg_base_path(char* __restrict__ dest, size_t limit, const char* pk
 }
 
 // const char* f_suffix = ".pkg.tar.zst";
-char* pkg_file_path_stash = NULL;
+// char* pkg_file_path_stash = NULL;
 
-size_t write_pkg_file_path(char* __restrict__ dest, size_t limit, const char* pkg_name, const char* pkg_base, char quiet) {
-	if (pkg_file_path_stash != NULL) {
-		if (dest == NULL) {
-			return strlen(pkg_file_path_stash);
-		}
+// size_t write_pkg_file_path(char* __restrict__ dest, size_t limit, const char* pkg_name, const char* pkg_base, char quiet) {
+// 	if (pkg_file_path_stash != NULL) {
+// 		if (dest == NULL) {
+// 			return strlen(pkg_file_path_stash);
+// 		}
 
-		(void) strncpy(dest, pkg_file_path_stash, limit);
-		size_t rlen = strlen(pkg_file_path_stash);
-		free(pkg_file_path_stash);
-		pkg_file_path_stash = NULL;
-		return rlen;
-	}
+// 		(void) strncpy(dest, pkg_file_path_stash, limit);
+// 		size_t rlen = strlen(pkg_file_path_stash);
+// 		free(pkg_file_path_stash);
+// 		pkg_file_path_stash = NULL;
+// 		return rlen;
+// 	}
 
-	size_t pkgbase_path_len = write_pkg_base_path(NULL, 0, pkg_base);
-	char pkgbase_path[pkgbase_path_len + 1];
-	write_pkg_base_path(pkgbase_path, pkgbase_path_len + 1, pkg_base);
+// 	size_t pkgbase_path_len = write_pkg_base_path(NULL, 0, pkg_base);
+// 	char pkgbase_path[pkgbase_path_len + 1];
+// 	write_pkg_base_path(pkgbase_path, pkgbase_path_len + 1, pkg_base);
 
-	char* srcpkg_ver = extract_existing_pkg_base_ver(pkg_base, 0);
+// 	char* srcpkg_ver = extract_existing_pkg_base_ver(pkg_base, 0);
 
-	size_t pkg_ver_str_len = snprintf(NULL, 0, "%s-%s", pkg_name, srcpkg_ver);
-	char   pkg_ver_str[pkg_ver_str_len + 1];
+// 	size_t pkg_ver_str_len = snprintf(NULL, 0, "%s-%s", pkg_name, srcpkg_ver);
+// 	char   pkg_ver_str[pkg_ver_str_len + 1];
 
-	(void) snprintf(pkg_ver_str, pkg_ver_str_len + 1, "%s-%s", pkg_name, srcpkg_ver);
+// 	(void) snprintf(pkg_ver_str, pkg_ver_str_len + 1, "%s-%s", pkg_name, srcpkg_ver);
 	
-	int output_fds[2];
+// 	int output_fds[2];
 
-	run_syscall_print_err_w_act(pipe(output_fds), return 0;, error_printf, __FILE__, __LINE__);
+// 	run_syscall_print_err_w_act(pipe(output_fds), return 0;, error_printf, __FILE__, __LINE__);
 
-	int makepkg_subprocess = fork();
+// 	int makepkg_subprocess = fork();
 
-	if (makepkg_subprocess == -1) {
-		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
-		return 0;
-	} else if (makepkg_subprocess == 0) {
-		run_syscall_print_err_w_act(close(output_fds[0]), ;, warning_printf, __FILE__, __LINE__);
-		run_syscall_print_err_w_act(dup2(output_fds[1], STDOUT_FILENO), (void) close(output_fds[1]); return 0;, error_printf, __FILE__, __LINE__);
-		run_syscall_print_err_w_act(close(output_fds[1]), ;, warning_printf, __FILE__, __LINE__);
+// 	if (makepkg_subprocess == -1) {
+// 		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+// 		return 0;
+// 	} else if (makepkg_subprocess == 0) {
+// 		run_syscall_print_err_w_act(close(output_fds[0]), ;, warning_printf, __FILE__, __LINE__);
+// 		run_syscall_print_err_w_act(dup2(output_fds[1], STDOUT_FILENO), (void) close(output_fds[1]); return 0;, error_printf, __FILE__, __LINE__);
+// 		run_syscall_print_err_w_act(close(output_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
-		if (!quiet)
-			(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", pkgbase_path);
+// 		if (!quiet)
+// 			(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", pkgbase_path);
 
-		run_syscall_print_err_w_act(chdir(pkgbase_path), return 0;, error_printf, __FILE__, __LINE__);
+// 		run_syscall_print_err_w_act(chdir(pkgbase_path), return 0;, error_printf, __FILE__, __LINE__);
 
-		if (!quiet)
-			(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg --packagelist\033[0m ---\n");
+// 		if (!quiet)
+// 			(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg --packagelist\033[0m ---\n");
 
-		if (execl("/usr/bin/makepkg", "makepkg", "--packagelist", NULL) < 0) {
-			(void) note_printf(" \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
-			(void) note_printf(" %s\n", strerror(errno));
-			return 0;
-		}
+// 		if (execl("/usr/bin/makepkg", "makepkg", "--packagelist", NULL) < 0) {
+// 			(void) note_printf(" \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
+// 			(void) note_printf(" %s\n", strerror(errno));
+// 			return 0;
+// 		}
 
-		_exit(-1);
-		return 0;
-	} else {
-		run_syscall_print_err_w_act(close(output_fds[1]), ;, warning_printf, __FILE__, __LINE__);
+// 		_exit(-1);
+// 		return 0;
+// 	} else {
+// 		run_syscall_print_err_w_act(close(output_fds[1]), ;, warning_printf, __FILE__, __LINE__);
 
-		int makepkg_stat;
-		run_syscall_print_err_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), (void) close(output_fds[0]); return 0;, error_printf, __FILE__, __LINE__);
+// 		int makepkg_stat;
+// 		run_syscall_print_err_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), (void) close(output_fds[0]); return 0;, error_printf, __FILE__, __LINE__);
 
-		if (WEXITSTATUS(makepkg_stat) != 0) {
-			(void) warning_printf(" makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
-			return 0;
-		}
-	}
+// 		if (WEXITSTATUS(makepkg_stat) != 0) {
+// 			(void) warning_printf(" makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
+// 			return 0;
+// 		}
+// 	}
 
-	streamed_content_t pkglist_stream = stream_fd_content_alloc(output_fds[0]);
+// 	streamed_content_t pkglist_stream = stream_fd_content_alloc(output_fds[0]);
 
-	if (pkglist_stream.content == NULL) {
-		return 0;
-	}
+// 	if (pkglist_stream.content == NULL) {
+// 		return 0;
+// 	}
 
-	char* tok = strtok(pkglist_stream.content, "\n");
+// 	char* tok = strtok(pkglist_stream.content, "\n");
 
-	if (tok == NULL) {
-		(void) fprintf(stderr, "--- \033[1;31m%s reports no package file for %s!\033[0m ---\n", pkg_base, pkg_name);
-		return 0;
-	}
+// 	if (tok == NULL) {
+// 		(void) fprintf(stderr, "--- \033[1;31m%s reports no package file for %s!\033[0m ---\n", pkg_base, pkg_name);
+// 		return 0;
+// 	}
 
-	while (tok != NULL) {
-		if (strstr(tok, pkg_ver_str) != NULL) {
-			break;
-		}
+// 	while (tok != NULL) {
+// 		if (strstr(tok, pkg_ver_str) != NULL) {
+// 			break;
+// 		}
 
-		tok = strtok(NULL, "\n");
-	}
+// 		tok = strtok(NULL, "\n");
+// 	}
 
-	if (tok == NULL) {
-		(void) fprintf(stderr, "--- \033[1;31mCould not find package file for %s!\033[0m ---\n", pkg_name);
-		return 0;
-	}
+// 	if (tok == NULL) {
+// 		(void) fprintf(stderr, "--- \033[1;31mCould not find package file for %s!\033[0m ---\n", pkg_name);
+// 		return 0;
+// 	}
 
-	size_t toklen = strlen(tok);
+// 	size_t toklen = strlen(tok);
 
-	pkg_file_path_stash = (char*) malloc((toklen + 1) * sizeof(char));
-	if (pkg_file_path_stash == NULL) {
-		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
-		stream_fd_content_dealloc(&pkglist_stream);
-		return 0;
-	}
-	(void) strncpy(pkg_file_path_stash, tok, toklen + 1);
-	stream_fd_content_dealloc(&pkglist_stream);
-	return toklen;
-}
+// 	pkg_file_path_stash = (char*) malloc((toklen + 1) * sizeof(char));
+// 	if (pkg_file_path_stash == NULL) {
+// 		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
+// 		stream_fd_content_dealloc(&pkglist_stream);
+// 		return 0;
+// 	}
+// 	(void) strncpy(pkg_file_path_stash, tok, toklen + 1);
+// 	stream_fd_content_dealloc(&pkglist_stream);
+// 	return toklen;
+// }
 
-char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, char quiet) {
-	size_t pkgbase_path_len = write_pkg_base_path(NULL, 0, pkg_base);
-	char pkgbase_path[pkgbase_path_len + 1];
-	write_pkg_base_path(pkgbase_path, pkgbase_path_len + 1, pkg_base);
+// char* pkg_file_path_stream_alloc(const char* pkg_name, const char* pkg_base, char quiet) {
+// 	size_t pkgbase_path_len = write_pkg_base_path(NULL, 0, pkg_base);
+// 	char pkgbase_path[pkgbase_path_len + 1];
+// 	write_pkg_base_path(pkgbase_path, pkgbase_path_len + 1, pkg_base);
 
-	char* srcpkg_ver = extract_existing_pkg_base_ver(pkg_base, 0);
+// 	char* srcpkg_ver = extract_existing_pkg_base_ver(pkg_base, 0);
 
-	size_t pkg_ver_str_len = snprintf(NULL, 0, "%s-%s", pkg_name, srcpkg_ver);
-	char   pkg_ver_str[pkg_ver_str_len + 1];
+// 	size_t pkg_ver_str_len = snprintf(NULL, 0, "%s-%s", pkg_name, srcpkg_ver);
+// 	char   pkg_ver_str[pkg_ver_str_len + 1];
 
-	(void) snprintf(pkg_ver_str, pkg_ver_str_len + 1, "%s-%s", pkg_name, srcpkg_ver);
+// 	(void) snprintf(pkg_ver_str, pkg_ver_str_len + 1, "%s-%s", pkg_name, srcpkg_ver);
 	
-	int output_fds[2];
+// 	int output_fds[2];
 
-	run_syscall_print_err_w_act(pipe(output_fds), return NULL;, error_printf, __FILE__, __LINE__);
+// 	run_syscall_print_err_w_act(pipe(output_fds), return NULL;, error_printf, __FILE__, __LINE__);
 
-	int makepkg_subprocess = fork();
+// 	int makepkg_subprocess = fork();
 
-	if (makepkg_subprocess == -1) {
-		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
-		return NULL;
-	} else if (makepkg_subprocess == 0) {
-		run_syscall_print_err_w_act(close(output_fds[0]), close(output_fds[1]); exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
-		run_syscall_print_err_w_act(dup2(output_fds[1], STDOUT_FILENO), close(output_fds[1]); exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
-		run_syscall_print_err_w_act(close(output_fds[1]), exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
+// 	if (makepkg_subprocess == -1) {
+// 		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 3, strerror(errno));
+// 		return NULL;
+// 	} else if (makepkg_subprocess == 0) {
+// 		run_syscall_print_err_w_act(close(output_fds[0]), close(output_fds[1]); exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
+// 		run_syscall_print_err_w_act(dup2(output_fds[1], STDOUT_FILENO), close(output_fds[1]); exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
+// 		run_syscall_print_err_w_act(close(output_fds[1]), exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
 
-		if (!quiet)
-			(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", pkgbase_path);
+// 		if (!quiet)
+// 			(void) fprintf(stderr, "--- \033[1;32mChanging pwd for makepkg to %s\033[0m ---\n", pkgbase_path);
 
-		run_syscall_print_err_w_act(chdir(pkgbase_path), _exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
+// 		run_syscall_print_err_w_act(chdir(pkgbase_path), _exit(EXIT_FAILURE); return NULL;, error_printf, __FILE__, __LINE__);
 
-		if (!quiet)
-			(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg --packagelist\033[0m ---\n");
+// 		if (!quiet)
+// 			(void) fprintf(stderr, "--- \033[1;32mExecuting /usr/bin/makepkg --packagelist\033[0m ---\n");
 
-		if (execl("/usr/bin/makepkg", "makepkg", "--packagelist", NULL) < 0) {
-			(void) note_printf(" \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
-			(void) note_printf(" %s\n", strerror(errno));
-			return NULL;
-		}
+// 		if (execl("/usr/bin/makepkg", "makepkg", "--packagelist", NULL) < 0) {
+// 			(void) note_printf(" \033[1;31m/usr/bin/makepkg execution failed!\033[0m\n");
+// 			(void) note_printf(" %s\n", strerror(errno));
+// 			return NULL;
+// 		}
 
-		_exit(-1);
-		return NULL;
-	} else {
-		run_syscall_print_err_w_act(close(output_fds[1]), close(output_fds[0]); return NULL;, error_printf, __FILE__, __LINE__);
+// 		_exit(-1);
+// 		return NULL;
+// 	} else {
+// 		run_syscall_print_err_w_act(close(output_fds[1]), close(output_fds[0]); return NULL;, error_printf, __FILE__, __LINE__);
 
-		int makepkg_stat;
-		run_syscall_print_err_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), close(output_fds[0]); return NULL;, error_printf, __FILE__, __LINE__);
+// 		int makepkg_stat;
+// 		run_syscall_print_err_w_act(waitpid(makepkg_subprocess, &makepkg_stat, 0), close(output_fds[0]); return NULL;, error_printf, __FILE__, __LINE__);
 
-		if (WEXITSTATUS(makepkg_stat) != 0) {
-			(void) warning_printf(" makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
-			return NULL;
-		}
-	}
+// 		if (WEXITSTATUS(makepkg_stat) != 0) {
+// 			(void) warning_printf(" makepkg exited with code %d.\n", WEXITSTATUS(makepkg_stat));
+// 			return NULL;
+// 		}
+// 	}
 
-	streamed_content_t pkglist_stream = stream_fd_content_alloc(output_fds[0]);
+// 	streamed_content_t pkglist_stream = stream_fd_content_alloc(output_fds[0]);
 
-	if (pkglist_stream.content == NULL) {
-		return NULL;
-	}
+// 	if (pkglist_stream.content == NULL) {
+// 		return NULL;
+// 	}
 
-	char* tok = strtok(pkglist_stream.content, "\n");
+// 	char* tok = strtok(pkglist_stream.content, "\n");
 
-	if (tok == NULL) {
-		(void) fprintf(stderr, "--- \033[1;31m%s reports no package file for %s!\033[0m ---\n", pkg_base, pkg_name);
-		return NULL;
-	}
+// 	if (tok == NULL) {
+// 		(void) fprintf(stderr, "--- \033[1;31m%s reports no package file for %s!\033[0m ---\n", pkg_base, pkg_name);
+// 		return NULL;
+// 	}
 
-	while (tok != NULL) {
-		if (strstr(tok, pkg_ver_str) != NULL) {
-			break;
-		}
+// 	while (tok != NULL) {
+// 		if (strstr(tok, pkg_ver_str) != NULL) {
+// 			break;
+// 		}
 
-		tok = strtok(NULL, "\n");
-	}
+// 		tok = strtok(NULL, "\n");
+// 	}
 
-	if (tok == NULL) {
-		(void) fprintf(stderr, "--- \033[1;31mCould not find package file for %s!\033[0m ---\n", pkg_name);
-		return NULL;
-	}
+// 	if (tok == NULL) {
+// 		(void) fprintf(stderr, "--- \033[1;31mCould not find package file for %s!\033[0m ---\n", pkg_name);
+// 		return NULL;
+// 	}
 
-	size_t toklen = strlen(tok);
+// 	size_t toklen = strlen(tok);
 
-	char* file_path = (char*) malloc((toklen + 1) * sizeof(char));
-	if (file_path == NULL) {
-		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
-		stream_fd_content_dealloc(&pkglist_stream);
-		return NULL;
-	}
-	(void) strncpy(file_path, tok, toklen + 1);
-	stream_fd_content_dealloc(&pkglist_stream);
-	return file_path;
-}
+// 	char* file_path = (char*) malloc((toklen + 1) * sizeof(char));
+// 	if (file_path == NULL) {
+// 		(void) error_printf("[%s:%d]: %s\n", __FILE__, __LINE__ - 2, strerror(errno));
+// 		stream_fd_content_dealloc(&pkglist_stream);
+// 		return NULL;
+// 	}
+// 	(void) strncpy(file_path, tok, toklen + 1);
+// 	stream_fd_content_dealloc(&pkglist_stream);
+// 	return file_path;
+// }
 
 static const char* aur_url_fmt = "https://aur.archlinux.org/%s.git";
 
