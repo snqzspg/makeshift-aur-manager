@@ -148,7 +148,9 @@ void aur_perform_action(char** pkgs, size_t pkg_count, hashtable_t installed_pkg
 				failed_pkgs[failed_pkgs_count++] = pkgs[i];
 			}
 
-			(void) build_existing_pkg_base(pkgbase);
+			if (!pkg_file_exists(pkgs[i], pkgbase)) {
+				(void) build_existing_pkg_base(pkgbase);
+			}
 		}
 
 		if (failed_pkgs_count > 0) {

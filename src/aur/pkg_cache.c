@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include "../logger/logger.h"
+#include "pkg_info.h"
 
 #include "../unistd_helper.h"
 #include "pkg_cache.h"
@@ -281,6 +282,18 @@ char pkg_base_folder_exists(const char* pkg_base) {
 
 char pkg_base_in_cache(const char* pkg_base) {
 	return pkg_base_folder_exists(pkg_base);
+}
+
+char pkg_file_exists(const char* pkg_name, const char* pkg_base) {
+	struct stat sb;
+
+	char* pkg_loc = get_pkg_file_from_pkg_alloc(pkg_name, pkg_base);
+
+	int r = stat(pkg_loc, &sb);
+
+	free(pkg_loc);
+
+	return r == 0 && S_ISREG(sb.st_mode);
 }
 
 int fetch_pkg_base(const char* pkg_base) {
