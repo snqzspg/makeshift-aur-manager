@@ -40,4 +40,6 @@ void extract_ver_from_pkgs_muti_proc(char** __restrict__ s_out, size_t* __restri
 
 int update_existing_git_pkg_base(const char* pkg_base);
 
+size_t list_pkgbases(size_t* __restrict__ total_str_alloc, char** pkgbases, size_t pkgbases_limit, char* entries_stash, size_t entries_stash_limit);
+
 #endif // PKG_CACHE_H_INCLUDED

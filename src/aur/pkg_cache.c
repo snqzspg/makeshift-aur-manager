@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -12,6 +13,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "../hashtable.h"
 #include "../logger/logger.h"
 #include "pkg_info.h"
 
@@ -886,4 +888,85 @@ int update_existing_git_pkg_base(const char* pkg_base) {
 	}
 
 	return 0;
+}
+
+struct __list_pkgbases_args {
+	char** pkgbases;
+	size_t pkgbases_limit;
+	char*  entries_stash;
+	size_t entries_stash_limit;
+	size_t pkgbases_counter;
+	size_t entries_stash_counter;
+};
+
+static int __write_pkgbase_names(const char* fname, const struct linux_dirent* d, char d_type, void* data_passed) {
+	char*  pkgbase_name     = d -> d_name;
+	size_t pkgbase_name_len = strlen(pkgbase_name);
+
+	if (d_type != DT_DIR || strcmp(pkgbase_name, ".") == 0 || strcmp(pkgbase_name, "..") == 0 || strcmp(pkgbase_name, "__completions__") == 0) {
+		return 0;
+	}
+
+	struct __list_pkgbases_args* args = (struct __list_pkgbases_args*) data_passed;
+	char** pkgbases            = args -> pkgbases;
+	size_t pkgbases_limit      = args -> pkgbases_limit;
+	char*  entries_stash       = args -> entries_stash;
+	size_t entries_stash_limit = args -> entries_stash_limit;
+	size_t i = args -> pkgbases_counter;
+	size_t j = args -> entries_stash_counter;
+
+	if (pkgbases != NULL && entries_stash != NULL && i < pkgbases_limit) {
+		pkgbases[i] = entries_stash + j;
+		if (j + pkgbase_name_len < entries_stash_limit) {
+			(void) memcpy(pkgbases[i], pkgbase_name, (pkgbase_name_len + 1) * sizeof(char));
+		}
+	}
+	i++;
+	j += pkgbase_name_len + 1;
+
+	args -> pkgbases_counter      = i;
+	args -> entries_stash_counter = j;
+	return 0;
+}
+
+size_t list_pkgbases(size_t* __restrict__ total_str_alloc, char** pkgbases, size_t pkgbases_limit, char* entries_stash, size_t entries_stash_limit) {
+	if (!does_pkg_cache_exist()) {
+		return 0;
+	}
+
+	struct __list_pkgbases_args args = {
+		.pkgbases              = pkgbases,
+		.pkgbases_limit        = pkgbases_limit,
+		.entries_stash         = entries_stash,
+		.entries_stash_limit   = entries_stash_limit,
+		.pkgbases_counter      = 0,
+		.entries_stash_counter = 0
+	};
+
+	size_t n_dir_entries = iter_folder_contents(pkg_cache_folder, 0, __write_pkgbase_names, &args);
+
+	if (total_str_alloc != NULL)
+		*total_str_alloc = args.entries_stash_counter;
+
+	return args.pkgbases_counter;
+}
+
+char* find_pkg_base(const char* pkg_name) {
+	size_t total_str_alloc;
+	size_t n_pkgbases = list_pkgbases(&total_str_alloc, NULL, 0, NULL, 0);
+
+	char pkgbase_names_stash[total_str_alloc];
+	char* pkgbases[n_pkgbases];
+
+	(void) list_pkgbases(&total_str_alloc, pkgbases, n_pkgbases, pkgbase_names_stash, total_str_alloc);
+
+	for (size_t i = 0; i < n_pkgbases; i++) {
+		
+	}
+}
+
+int update_fetched_pkg_info(const char* pkg_name, const char* pkg_base, hashtable_t* __restrict__ map) {
+	struct hashtable_node* node = hashtable_find_inside_map(*map, pkg_name);
+
+	
 }
