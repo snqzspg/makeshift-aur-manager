@@ -900,8 +900,8 @@ struct __list_pkgbases_args {
 };
 
 static int __write_pkgbase_names(const char* fname, const struct linux_dirent* d, char d_type, void* data_passed) {
-	char*  pkgbase_name     = d -> d_name;
-	size_t pkgbase_name_len = strlen(pkgbase_name);
+	const char*  pkgbase_name = d -> d_name;
+	size_t pkgbase_name_len   = strlen(pkgbase_name);
 
 	if (d_type != DT_DIR || strcmp(pkgbase_name, ".") == 0 || strcmp(pkgbase_name, "..") == 0 || strcmp(pkgbase_name, "__completions__") == 0) {
 		return 0;
@@ -943,7 +943,7 @@ size_t list_pkgbases(size_t* __restrict__ total_str_alloc, char** pkgbases, size
 		.entries_stash_counter = 0
 	};
 
-	size_t n_dir_entries = iter_folder_contents(pkg_cache_folder, 0, __write_pkgbase_names, &args);
+	(void) iter_folder_contents(pkg_cache_folder, 0, __write_pkgbase_names, &args);
 
 	if (total_str_alloc != NULL)
 		*total_str_alloc = args.entries_stash_counter;
@@ -951,22 +951,22 @@ size_t list_pkgbases(size_t* __restrict__ total_str_alloc, char** pkgbases, size
 	return args.pkgbases_counter;
 }
 
-char* find_pkg_base(const char* pkg_name) {
-	size_t total_str_alloc;
-	size_t n_pkgbases = list_pkgbases(&total_str_alloc, NULL, 0, NULL, 0);
+// char* find_pkg_base(const char* pkg_name) {
+// 	size_t total_str_alloc;
+// 	size_t n_pkgbases = list_pkgbases(&total_str_alloc, NULL, 0, NULL, 0);
 
-	char pkgbase_names_stash[total_str_alloc];
-	char* pkgbases[n_pkgbases];
+// 	char pkgbase_names_stash[total_str_alloc];
+// 	char* pkgbases[n_pkgbases];
 
-	(void) list_pkgbases(&total_str_alloc, pkgbases, n_pkgbases, pkgbase_names_stash, total_str_alloc);
+// 	(void) list_pkgbases(&total_str_alloc, pkgbases, n_pkgbases, pkgbase_names_stash, total_str_alloc);
 
-	for (size_t i = 0; i < n_pkgbases; i++) {
+// 	for (size_t i = 0; i < n_pkgbases; i++) {
 		
-	}
-}
+// 	}
+// }
 
-int update_fetched_pkg_info(const char* pkg_name, const char* pkg_base, hashtable_t* __restrict__ map) {
-	struct hashtable_node* node = hashtable_find_inside_map(*map, pkg_name);
+// int update_fetched_pkg_info(const char* pkg_name, const char* pkg_base, hashtable_t* __restrict__ map) {
+// 	struct hashtable_node* node = hashtable_find_inside_map(*map, pkg_name);
 
 	
-}
+// }
