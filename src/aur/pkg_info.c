@@ -87,7 +87,7 @@ int init_pkgdest() {
 	}
 
 	int stream_out_fd;
-	int r = run_subprocess(NULL, 0, 1, &stream_fd_content_alloc, STDIN_FILENO, NULL, "/usr/bin/bash", "bash", "-c", 
+	int r = run_subprocess(NULL, 0, 1, &stream_out_fd, STDIN_FILENO, NULL, "/usr/bin/bash", "bash", "-c", 
 		"source /usr/share/makepkg/util/pkgbuild.sh;"
 		"source /etc/makepkg.conf;"
 	, NULL);
