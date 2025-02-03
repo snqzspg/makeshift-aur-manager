@@ -67,6 +67,10 @@ char* get_pkg_file_from_pkg_alloc(const char* pkg_name, const char* pkg_base) {
 	}
 
 	streamed_content_t out_stream = stream_fd_content_alloc(ver_out_fd);
+	if (out_stream.len == 0) {
+		stream_fd_content_dealloc(&out_stream);
+		return NULL;
+	}
 	out_stream.content[out_stream.len - 1] = '\0';
 	return stream_fd_content_detach_str(&out_stream);
 }
