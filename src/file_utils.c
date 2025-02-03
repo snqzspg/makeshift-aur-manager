@@ -172,14 +172,78 @@ int is_text_file(int fd) {
 	return 1;
 }
 
-struct linux_dirent {
-	long           d_ino;
-	off_t          d_off;
-	unsigned short d_reclen;
-	char           d_name[];
-};
-
 #define RDIR_FRAG_SIZE 4096
+
+/**
+ * Iterate through the entries inside a given folder, performing a function for each entry.
+ * 
+ * @param folder The path to the folder to look into
+ * @param recursive If set to a non-zero value, it will iterate through all files within subfolders
+ * @param fx_to_exec_content The function to apply for each entry. The parameters are provided as follows:
+ *                           (const char* full_name, const struct linux_dirent* d, char d_type, void* data_passed)
+ *                           Return a non-zero value to prematuraly terminate the iteration.
+ * @param data_to_pass Pointer to a mutable area that can be accessed within the function for each entry.
+ */
+size_t iter_folder_contents(const char* folder, int recursive, int (*fx_to_exec_content)(const char*, const struct linux_dirent*, char, void*), void* data_to_pass) {
+	int         folder_is_blank   = folder == NULL || *folder == '\0';
+	const char* folder_to_syscall = folder_is_blank ? "." : folder;
+
+	int fd = open(folder_to_syscall, O_RDONLY | O_DIRECTORY);
+
+	if (fd == -1) {
+		(void) error_printf(" Opening %s failed! - %s\n", folder_to_syscall, strerror(errno));
+		return 0;
+	}
+
+	char fragment[RDIR_FRAG_SIZE];
+	size_t n_entries = 0;
+
+	for (long n_read = syscall(SYS_getdents, fd, fragment, RDIR_FRAG_SIZE); n_read != 0; n_read = syscall(SYS_getdents, fd, fragment, RDIR_FRAG_SIZE)) {
+		if (n_read == -1) {
+			error_perror("[getdents]");
+			(void) close(fd);
+			return 0;
+		}
+
+		for (int bpos = 0; bpos < n_read;) {
+			struct linux_dirent* d = (struct linux_dirent*) (fragment + bpos);
+			char d_type = *(fragment + bpos + d -> d_reclen - 1);
+			int  is_dir = d_type == DT_DIR;
+
+			bpos += d -> d_reclen;
+
+			size_t fpath_len = snprintf(NULL, 0, "%s/%s", folder, d -> d_name);
+			char fpath_buffer[fpath_len + 1];
+			(void) snprintf(fpath_buffer, fpath_len + 1, "%s/%s", folder, d -> d_name);
+
+			char* fpath = folder_is_blank ? d -> d_name : fpath_buffer;
+
+			if (recursive && (strcmp(d -> d_name, ".") == 0 || strcmp(d -> d_name, "..") == 0 || strcmp(d -> d_name, ".git") == 0)) {
+				continue;
+			}
+
+			if (recursive && is_dir) {
+				n_entries += iter_folder_contents(fpath, 1, fx_to_exec_content, data_to_pass);
+				continue;
+			}
+
+			if (recursive && d_type != DT_REG) {
+				continue;
+			}
+
+			int r = fx_to_exec_content == NULL ? 0 : fx_to_exec_content(fpath, d, d_type, data_to_pass);
+			if (r != 0) {
+				(void) close(fd);
+				return n_entries;
+			}
+
+			n_entries++;
+		}
+	}
+
+	(void) close(fd);
+	return n_entries;
+}
 
 /**
  * A very Linux specific method to get all files for a directory.

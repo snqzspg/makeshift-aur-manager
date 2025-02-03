@@ -25,6 +25,25 @@ int file_exists(const char* fname);
  */
 int is_text_file(int fd);
 
+struct linux_dirent {
+	long           d_ino;
+	off_t          d_off;
+	unsigned short d_reclen;
+	char           d_name[];
+};
+
+/**
+ * Iterate through the entries inside a given folder, performing a function for each entry.
+ * 
+ * @param folder The path to the folder to look into
+ * @param recursive If set to a non-zero value, it will iterate through all files within subfolders
+ * @param fx_to_exec_content The function to apply for each entry. The parameters are provided as follows:
+ *                           (const char* full_name, const struct linux_dirent* d, char d_type, void* data_passed)
+ *                           Return a non-zero value to prematuraly terminate the iteration.
+ * @param data_to_pass Pointer to a mutable area that can be accessed within the function for each entry.
+ */
+size_t iter_folder_contents(const char* folder, int recursive, int (*fx_to_exec_content)(const char*, const struct linux_dirent*, char, void*), void* data_to_pass);
+
 /**
  * A very Linux specific method to get all files for a directory.
  * It returns the files and folders in order of inodes.
